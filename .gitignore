@@ -1,6 +1,6 @@
 .nextflow.log*
 .nextflow/
-results/
+results*/
 test*
 data/
 jupyter/

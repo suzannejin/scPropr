@@ -1,3 +1,4 @@
+library(data.table)
 library(zCompositions)
 library(propr, lib.loc=paste0(.libPaths()[1], "/propr_sjin"))
 
@@ -9,7 +10,8 @@ output = args[3]
 if (length(args) >= 4){output2 = args[4]}
 
 # read count data
-count = as.matrix(read.csv(gzfile(countfile)))
+# count = as.matrix(read.csv(gzfile(countfile)))
+count = fread(countfile)
 dim(count)
 class(count)
 
@@ -45,7 +47,9 @@ message("CLR-transform data")
 clr = propr:::proprCLR(count)
 
 # save output
-write.table(clr, file=gzfile(output), quote=F, sep=",")
+# write.table(clr, file=gzfile(output), quote=F, sep=",")
+fwrite(clr, file=output, quote=F, sep=",", row.names=F, col.names=F, compress="gzip")
 if (exists("output2")){
-    write.table(count, file=gzfile(output2), quote=F, sep=",")
+    fwrite(count, file=output2, quote=F, sep=",", row.names=F, col.names=F, compress="gzip")
+    # write.table(count, file=gzfile(output2), quote=F, sep=",")
 }
