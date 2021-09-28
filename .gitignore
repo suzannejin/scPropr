@@ -1,0 +1,7 @@
+.nextflow.log*
+.nextflow/
+results/
+test*
+data/
+jupyter/
+work/

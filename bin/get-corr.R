@@ -1,0 +1,17 @@
+library(stringr)
+library(propr, lib.loc=paste0(.libPaths()[1], "/propr_sjin"))
+
+# usage: get-corr.R <count> <method> <output> -------------------------------------------
+args = commandArgs(trailingOnly = T)
+countfile = args[1]
+coef = args[2]
+output = args[3]
+
+# read count data
+count = as.matrix(read.csv(gzfile(countfile)))
+
+# compute association coefficients ------------------------------------------------------
+corr = propr(count, metric=coef, ivar=NA, p=0)@matrix  
+# corr = propr(dat, metric=coef, ivar=NA, p=20)
+# corr = updateCutoffs(corr, seq(min(corr@matrix), max(corr@matrix), length=102)[2:101])
+write.table(corr, file=gzfile(output), quote=F, sep=",")
