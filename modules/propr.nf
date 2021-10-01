@@ -1,7 +1,7 @@
-process CLR {
+process TRANSF {
 
-    tag "${cell_type}-${zerohandling}-${count_type}"
-    publishDir "${params.outdir}/${cell_type}/clr", 
+    tag "${cell_type}-${method}-${count_type}"
+    publishDir "${params.outdir}/${cell_type}/data", 
         mode: params.publish_dir_mode,
         saveAs: { filename -> if (filename.indexOf("_none.csv.gz") > 0) null else filename }
 
@@ -9,54 +9,51 @@ process CLR {
     tuple val(cell_type), \
           val(count_type), \
           file(count_file), \
-          val(zerohandling)
+          val(method)
 
     output:
     tuple val(cell_type), \
           val(count_type), \
-          file("${count_type}_${zerohandling}.csv.gz"), \
-          val(zerohandling), \
+          file("${count_type}_${method}.csv.gz"), \
+          val(method), \
           emit: ch_clr
-    file("${count_type}_zeroreplace_${zerohandling}.csv.gz")
 
     script:
-    if (zerohandling == "none")
+    if (method == "none")
     """
-    cp ${count_file} ${count_type}_zeroreplace_${zerohandling}.csv.gz
-    mv ${count_file} ${count_type}_${zerohandling}.csv.gz
+    mv ${count_file} ${count_type}_${method}.csv.gz
     """
     else
     """
-    Rscript ${baseDir}/bin/clr-data.R \
+    Rscript ${baseDir}/bin/transf-data.R \
         ${count_file} \
-        ${zerohandling} \
-        ${count_type}_${zerohandling}.csv.gz \
-        ${count_type}_zeroreplace_${zerohandling}.csv.gz
+        ${method} \
+        ${count_type}_${method}.csv.gz
     """
 }
 
 process CORR {
 
-    tag "${cell_type}-${zerohandling}-${method}-${count_type}"
+    tag "${cell_type}-${method1}-${method2}-${count_type}"
     publishDir "${params.outdir}/${cell_type}/corr", mode: params.publish_dir_mode
 
     input:
     tuple val(cell_type), \
           val(count_type), \
           file(count_file), \
-          val(zerohandling), \
-          val(method)
+          val(method1), \
+          val(method2)
 
     output:
     tuple val(cell_type), \
-          file("${count_type}_${zerohandling}_${method}.csv.gz"), \
+          file("${count_type}_${method1}_${method2}.csv.gz"), \
           emit: ch_corr
 
     script:
     """
     Rscript ${baseDir}/bin/get-corr.R \
         ${count_file} \
-        ${method} \
-        ${count_type}_${zerohandling}_${method}.csv.gz
+        ${method2} \
+        ${count_type}_${method1}_${method2}.csv.gz
     """
 }
