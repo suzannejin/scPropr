@@ -1,53 +1,58 @@
 library(data.table)
-library(zCompositions)
 library(propr, lib.loc=paste0(.libPaths()[1], "/propr_sjin"))
 
 # usage: clr-data.R <count> <method> <output> ---------------
+
+# get arguments
 args = commandArgs(trailingOnly = T)
 countfile = args[1] # observations x features matrix
-method = args[2]    # zcompositions, one, min, tmm
-output = args[3]
-clr_methods = c("zcompositions","one","min")
-norm_methods = c("tmm")
-valid_methods = c(clr_methods, norm_methods)
-if (!method %in% valid_methods){
-    stop("Please give a proper zero handling method {", toString(valid_methods), "}")
+output = args[2]
+method_zero = args[3]    # zcompositions, one, min, none
+method_transf = args[4]  # tmm, log2, clr
+genesfile = args[5]   # list with the positions of the genes of interest
+
+# check arguments
+if (! method_zero %in% c("zcompositions", "one", "min", "none")){
+    stop("wrong zero replacement method - ", method_zero)
+}else if (! method_transf %in% c("log2", "clr", "tmm")){
+    stop("wrong transformation or normalization method - ", method_transf)
 }
 
 # functions -------------------------------------------------------------------
 
-clr_data <- function(count, method=c("zcompositions", "one", "min")){
-
-    # replace zeros
-    message("replace zeros")
-    count = replace_zero(count, method)
-
-    # check negative values
-    if(any(count<0, na.rm=T)) stop("counts matrix contain negative values")
-
-    # clr-transform data
-    message("CLR-transform data")
-    clr = propr:::proprCLR(count)
-
-    return(clr)
-}
-
 replace_zero <- function(count, method=c("zcompositions", "one", "min")){
+
+    method = match.arg(method)
+
+    # check if zero
+    if (!any(count==0, na.rm=T)) return(count)
+    message("replacing zeros with method ", method)
+
+    # replace zero
     if (method == "zcompositions"){
+        require(zCompositions)
         count = cmultRepl(count, method="CZM", label=0, output="counts")  
+
     }else if (method == "one"){
         count[count == 0] = 1
+
     }else{
         count = as.matrix(count) 
         zeros = count == 0
         count[zeros] = min(count[!zeros])
     }
+
+    # check negative values
+    if(any(count<0, na.rm=T)) stop("counts matrix contain negative values")
+
     return(count)
 }
 
 normalize_data <- function(count, method=c("tmm")){
+    method = match.arg(method)
     if (method == "tmm"){
         require(edgeR)
+        message("normalizing data with method ", method)
         # Note that normalization in edgeR is model-based, and the original read counts are not themselves transformed. This means that users should not transform the read counts in any way
         # before inputing them to edgeR. For example, users should not enter RPKM or FPKM values to edgeR in place of read counts. Such quantities will prevent edgeR from correctly
         # estimating the mean-variance relationship in the data, which is a crucial to the statistical
@@ -68,17 +73,29 @@ normalize_data <- function(count, method=c("tmm")){
 
 # read count data
 count = fread(countfile)
-dim(count)
-class(count)
+
+# filter genes
+if (file.exists(genesfile)){
+    g = fread(genesfile, header=F)$V1
+    count = count[,..g]
+}
 
 # count dropout
 print(paste0("dropout: ", round(mean(count==0, na.rm=T), 3)))
+dim(count)
+class(count)
 
 # clr-transform or normalize
-if (method %in% clr_methods){
-    count = clr_data(count, method)
-}else{
-    count = normalize_data(count, method)
+if (method_transf == "log2"){
+    count = replace_zero(count, method_zero)
+    message("log-transforming data")
+    count = log2(count)
+}else if(method_transf == "clr"){
+    count = replace_zero(count, method_zero)
+    message("clr-transforming data")
+    count = propr:::proprCLR(count)
+}else if (method_transf == "tmm"){
+    count = normalize_data(count, method_transf)
 }
 
 # save output
