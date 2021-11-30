@@ -1,5 +1,6 @@
 library(data.table)
-library(propr, lib.loc=paste0(.libPaths()[1], "/propr_sjin"))
+library(propr)
+# library(propr, lib.loc=paste0(.libPaths()[1], "/propr_sjin"))
 
 # usage: clr-data.R <count> <method> <output> ---------------
 

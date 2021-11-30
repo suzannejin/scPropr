@@ -1,6 +1,7 @@
 library(data.table)
 library(stringr)
-library(propr, lib.loc=paste0(.libPaths()[1], "/propr_sjin"))
+library(propr)
+# library(propr, lib.loc=paste0(.libPaths()[1], "/propr_sjin"))
 
 # usage: get-corr.R <count> <method> <output> -------------------------------------------
 args = commandArgs(trailingOnly = T)
