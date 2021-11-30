@@ -20,7 +20,7 @@ process TRANSF {
           emit: ch_transf
 
     script:
-    def nozero = params.nozero_mode ? params.nozero_genes : "NA"
+    def nozero = params.nozero_mode ? nozero_file : "NA"
 
     """
     Rscript ${baseDir}/bin/transf-data.R \

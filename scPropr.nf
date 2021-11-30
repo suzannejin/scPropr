@@ -40,7 +40,7 @@ workflow {
     TRANSF(ch_input)
     TRANSF.out.ch_transf
           .combine( Channel.fromList(params.methods_corr.tokenize(",")) )
-          .filter{ (it[5] in ["rho","vlr"] && it[4] == "clr") || (it[5] == "pearson") || (it[5] == "partialcor" && it[4] in ["log2","clr"]) }
+          .filter{ (it[4] == "log2") || (it[4] == "clr") || (it[5] == "pearson") }
           .set { ch_to_corr }
 
     /* 2nd step: Compute association coefficients */
