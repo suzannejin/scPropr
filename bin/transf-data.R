@@ -11,11 +11,12 @@ output = args[2]
 method_zero = args[3]    # zcompositions, one, min, none
 method_transf = args[4]  # tmm, log2, clr
 genesfile = args[5]   # list with the positions of the genes of interest
+refgene = args[6]    # reference gene index
 
 # check arguments
 if (! method_zero %in% c("zcompositions", "one", "min", "none")){
     stop("wrong zero replacement method - ", method_zero)
-}else if (! method_transf %in% c("log2", "clr", "tmm")){
+}else if (! method_transf %in% c("log2", "clr", "alr", "tmm")){
     stop("wrong transformation or normalization method - ", method_transf)
 }
 
@@ -95,6 +96,15 @@ if (method_transf == "log2"){
     count = replace_zero(count, method_zero)
     message("clr-transforming data")
     count = propr:::proprCLR(count)
+}else if(method_transf == "alr"){
+    if (refgene == "NA"){
+        stop("Make sure you are giving the correct reference gene index for ALR-transformation")
+    }else{
+        refgene = as.numeric(refgene)
+    }
+    count = replace_zero(count, method_zero)
+    message("alr-transforming data")
+    count = propr:::proprALR(count, refgene)
 }else if (method_transf == "tmm"){
     count = normalize_data(count, method_transf)
 }

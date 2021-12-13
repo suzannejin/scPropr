@@ -19,8 +19,11 @@ ch_count
     .combine( ch_nozero, by:0 )
     .combine( Channel.fromList(params.methods_replace_zero.tokenize(",")) )
     .combine( Channel.fromList(params.methods_transf_data.tokenize(",")) )
-    .filter{ (it[4] == "none" && it[5] == "tmm") || (it[4] != "none" && it[5] in ["log2","clr"]) }
-    .set { ch_input }   // cell_type, count_type, count_file, nozero_file, zero_replacement_method, data_transf_method
+    .combine( Channel.fromList(params.ref_genes))
+    .filter{ (it[4] == "none" && it[5] == "tmm") || (it[4] != "none" && it[5] in ["log2","clr","alr"]) }
+    .map{ it -> it[5] == "alr" ? it : [it[0..5], "NA"].flatten() }
+    .unique()
+    .set { ch_input }   // cell_type, count_type, count_file, nozero_file, zero_replacement_method, data_transf_method, ref_gene
 
 
 ////////////////////////////////////////////////////
@@ -40,7 +43,7 @@ workflow {
     TRANSF(ch_input)
     TRANSF.out.ch_transf
           .combine( Channel.fromList(params.methods_corr.tokenize(",")) )
-          .filter{ (it[4] == "log2") || (it[4] == "clr") || (it[5] == "cor") }
+          .filter{ (it[4] == "log2") || (it[4] == "clr") || (it[4] == "alr") || (it[6] == "cor") }
           .set { ch_to_corr }
 
     /* 2nd step: Compute association coefficients */
