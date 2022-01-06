@@ -1,5 +1,6 @@
 # install dependencies
-pkgs = c('pscl',
+pkgs = c('R.utils',
+         'pscl',
          'copula',
          'Rtsne', 
          'plyr', 

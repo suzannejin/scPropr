@@ -2,7 +2,7 @@ library(data.table)
 library(propr)
 # library(propr, lib.loc=paste0(.libPaths()[1], "/propr_sjin"))
 
-# usage: clr-data.R <count> <method> <output> ---------------
+# get arguments ---------------------------------------------------------------
 
 # get arguments
 args = commandArgs(trailingOnly = T)
@@ -16,7 +16,7 @@ refgene = args[6]    # reference gene index
 # check arguments
 if (! method_zero %in% c("zcompositions", "one", "min", "none")){
     stop("wrong zero replacement method - ", method_zero)
-}else if (! method_transf %in% c("log2", "clr", "alr", "tmm")){
+}else if (! method_transf %in% c("log2", "clr", "alr", "tmm", "scran")){
     stop("wrong transformation or normalization method - ", method_transf)
 }
 
@@ -50,11 +50,11 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min")){
     return(count)
 }
 
-normalize_data <- function(count, method=c("tmm")){
+normalize_data <- function(count, method=c("tmm", "scran"), pseudo.count=0){
     method = match.arg(method)
+    message("normalizing data with method ", method)
     if (method == "tmm"){
         require(edgeR)
-        message("normalizing data with method ", method)
         # Note that normalization in edgeR is model-based, and the original read counts are not themselves transformed. This means that users should not transform the read counts in any way
         # before inputing them to edgeR. For example, users should not enter RPKM or FPKM values to edgeR in place of read counts. Such quantities will prevent edgeR from correctly
         # estimating the mean-variance relationship in the data, which is a crucial to the statistical
@@ -62,10 +62,22 @@ normalize_data <- function(count, method=c("tmm")){
         # before inputing them to edgeR
 
         # For further information check: https://www.biostars.org/p/84087/ and https://www.biostars.org/p/317701/
-        y = DGEList(counts=t(count))   # it requires a matrix of features x samples
+        count = t(count) # it requires row=genes, col=cells
+        y = DGEList(counts=count)   
         y = calcNormFactors(y, method="TMM")
-        m = cpm(y)   # it calculates the normalized count per million. So normalized counts = counts / effective library size * 10E6
-        count = t(m)
+        count = cpm(y, log=T, prior.count=pseudo.count)   # it calculates the normalized count per million. So normalized counts = pseudocount / effective library size * 10E6, then the normalized count is log2-transformed
+        count = t(count)
+    }else if (method == "scran"){
+        require(scran)
+        require(scuttle)
+        require(SingleCellExperiment)
+        count = t(count)   # it requires row=genes, col=cells
+        sce = SingleCellExperiment(list(counts=count))
+        clusters = quickCluster(sce)
+        sce = computeSumFactors(sce, clusters=clusters)  #compute the size factors
+        sce = logNormCounts(sce, pseudo.count=pseudo.count)   # compute log2(pseudocount / size factor)
+        count = assays(sce)[["logcounts"]]
+        count = t(count)
     }
     # TODO add other popular normalization procedures
     return(count)
@@ -83,17 +95,26 @@ if (file.exists(genesfile)){
 }
 
 # count dropout
-print(paste0("dropout: ", round(mean(count==0, na.rm=T), 3)))
+dropout = round(mean(count==0, na.rm=T), 3)
+print(paste0("dropout: ", dropout))
 dim(count)
 class(count)
 
+# handle zero
+if (dropout > 0){
+    handle_zero = TRUE
+    pseudo.count = 1
+}else{
+    handle_zero = FALSE
+}
+
 # clr-transform or normalize
 if (method_transf == "log2"){
-    count = replace_zero(count, method_zero)
+    if (handle_zero) count = replace_zero(count, method_zero)
     message("log-transforming data")
     count = log2(count)
 }else if(method_transf == "clr"){
-    count = replace_zero(count, method_zero)
+    if (handle_zero) count = replace_zero(count, method_zero)
     message("clr-transforming data")
     count = propr:::proprCLR(count)
 }else if(method_transf == "alr"){
@@ -102,11 +123,11 @@ if (method_transf == "log2"){
     }else{
         refgene = as.numeric(refgene)
     }
-    count = replace_zero(count, method_zero)
+    if (handle_zero) count = replace_zero(count, method_zero)
     message("alr-transforming data")
     count = propr:::proprALR(count, refgene)
-}else if (method_transf == "tmm"){
-    count = normalize_data(count, method_transf)
+}else if (method_transf %in% c("tmm", "scran")){
+    count = normalize_data(count, method_transf, pseudo.count=1)   # THINK. Do we need to use zcompositions instead of a pseudocount of 1, to unify comparison with other methods? And control for zero imputation effect on the analysis?
 }
 
 # save output
