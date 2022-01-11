@@ -7,31 +7,38 @@ nextflow.enable.dsl = 2
 /* --          VALIDATE INPUTS                 -- */
 ////////////////////////////////////////////////////
 
+// input count data
 Channel
     .fromPath(params.count_file, checkIfExists:true)
-    .map { it -> [ it.getParent().getParent().baseName, it.baseName.tokenize('.')[0], it ] }  
+    .map { it -> [ it.getParent().getParent().baseName, "absolute", "experimental", it ] }  
     .set { ch_count }
+// feature (gene) names
+Channel
+    .fromPath(params.features, checkIfExists:true)
+    .map { it -> [ it.getParent().getParent().baseName, it ] }
+    .set { ch_features }
+// non-zero genes positions
 Channel
     .fromPath(params.nozero_genes, checkIfExists:true)
     .map { it -> [ it.getParent().getParent().baseName, it ] }
     .set { ch_nozero }
+
+// input for modeling step
 ch_count
-    .combine( ch_nozero, by:0 )
-    .combine( Channel.fromList(params.methods_replace_zero.tokenize(",")) )
-    .combine( Channel.fromList(params.methods_transf_data.tokenize(",")) )
-    .combine( Channel.fromList(params.ref_genes))
-    .filter{ (it[4] == "none" && it[5] == "tmm") || (it[4] != "none" && it[5] in ["log2","clr","alr"]) }
-    .map{ it -> it[5] == "alr" ? it : [it[0..5], "NA"].flatten() }
-    .unique()
-    .set { ch_input }   // cell_type, count_type, count_file, nozero_file, zero_replacement_method, data_transf_method, ref_gene
+    .combine( ch_features, by:0 )
+    .set { ch_input2model }  // cell_type, count_type1 (absolute/relative), count_type2 (experimental/simulated), count_file, features_file
 
 
 ////////////////////////////////////////////////////
 /* --          IMPORT LOCAL MODULES            -- */
 ////////////////////////////////////////////////////
 
-include { TRANSF } from "${baseDir}/modules/propr.nf"
-include { CORR   } from "${baseDir}/modules/propr.nf"
+include { MODEL    } from "${baseDir}/modules/simulate.nf"
+include { SIMULATE } from "${baseDir}/modules/simulate.nf"
+include { CHECK_DROPOUT } from "${baseDir}/modules/simulate.nf"
+include { RELATIVE } from "${baseDir}/modules/propr.nf"
+include { TRANSF   } from "${baseDir}/modules/propr.nf"
+include { CORR     } from "${baseDir}/modules/propr.nf"
 
 
 ////////////////////////////////////////////////////
@@ -39,13 +46,49 @@ include { CORR   } from "${baseDir}/modules/propr.nf"
 ////////////////////////////////////////////////////
 
 workflow {
-    /* 1st step: Transform or normalize data */
-    TRANSF(ch_input)
+
+    if (params.simulate) {
+
+    /* fit model */
+    MODEL(ch_input2model)
+    MODEL.out.ch_model
+        .combine( Channel.fromList(params.size_factors) )
+        .set { ch_model2simulate }
+
+    /* simulate data */
+    SIMULATE(ch_model2simulate)
+    SIMULATE.out.ch_simulated
+        .mix(ch_count)
+        .set{ ch_absolute }
+
+    }else{
+
+    Channel
+        .fromPath("${params.outdir}/*/simulate/simulate*.csv.gz")
+        .map{ it -> [ it.getParent().getParent().baseName, "absolute", it.baseName.tokenize(".")[0], it ] }
+        .mix(ch_count)
+        .set{ ch_absolute }
+    }
+
+    /* reclose data - get relative data */
+    RELATIVE(ch_absolute)
+    RELATIVE.out.ch_relative
+        .mix(ch_absolute)
+        .combine(ch_nozero, by:0)
+        .combine(Channel.fromList(params.methods_replace_zero.tokenize(",")))
+        .combine(Channel.fromList(params.methods_transf_data.tokenize(",")))
+        .combine(Channel.fromList(params.ref_genes))
+        .map{ it -> it[6] == "alr" ? it : [it[0..6], "NA"].flatten() }
+        .unique()
+        .set { ch_count2transf }   // cell_type, count_type1, count_type2, count_file, nozero_file, zero_replacement_method, data_transf_method, ref_gene
+
+    /* transform or normalize data */
+    TRANSF(ch_count2transf)
     TRANSF.out.ch_transf
           .combine( Channel.fromList(params.methods_corr.tokenize(",")) )
-          .filter{ (it[4] == "log2") || (it[4] == "clr") || (it[4] == "alr") || (it[6] == "cor") }
-          .set { ch_to_corr }
+          .filter{ (it[5] in ["log2", "clr", "alr"] ) || (it[7] == "cor") }
+          .set { ch_transf2corr }
 
-    /* 2nd step: Compute association coefficients */
-    CORR(ch_to_corr)
+    /* compute association coefficients */
+    CORR(ch_transf2corr)
 }

@@ -8,26 +8,42 @@ library(propr)
 args = commandArgs(trailingOnly = T)
 countfile = args[1] # observations x features matrix
 output = args[2]
-method_zero = args[3]    # zcompositions, one, min, none
+method_zero = args[3]    # zcompositions, one, min, none, pseudocount
 method_transf = args[4]  # tmm, log2, clr
 genesfile = args[5]   # list with the positions of the genes of interest
 refgene = args[6]    # reference gene index
 
 # check arguments
-if (! method_zero %in% c("zcompositions", "one", "min", "none")){
+if (! method_zero %in% c("zcompositions", "one", "min", "none", "pseudocount")){
     stop("wrong zero replacement method - ", method_zero)
 }else if (! method_transf %in% c("log2", "clr", "alr", "tmm", "scran")){
     stop("wrong transformation or normalization method - ", method_transf)
 }
 
+# read and process data --------------------------------------------------------
+
+# read count data
+count = fread(countfile)
+
+# filter genes
+if (file.exists(genesfile)){
+    g = fread(genesfile, header=F)$V1
+    count = count[,..g]
+}
+
+# count dropout
+dropout = round(mean(count==0, na.rm=T), 3)
+print(paste0("dropout: ", dropout))
+dim(count)
+class(count)
+
 # functions -------------------------------------------------------------------
 
-replace_zero <- function(count, method=c("zcompositions", "one", "min")){
+replace_zero <- function(count, method=c("zcompositions", "one", "min", "pseudocount", "none")){
 
     method = match.arg(method)
-
-    # check if zero
     if (!any(count==0, na.rm=T)) return(count)
+    if (method == "none") return(count)
     message("replacing zeros with method ", method)
 
     # replace zero
@@ -38,13 +54,16 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min")){
     }else if (method == "one"){
         count[count == 0] = 1
 
-    }else{
+    }else if (method == "min"){
         count = as.matrix(count) 
         zeros = count == 0
         count[zeros] = min(count[!zeros])
+
+    }else if (method == "pseudocount"){
+        count = as.matrix(count + 1)
     }
 
-    # check negative values
+    # check zeros and negative values
     if(any(count<0, na.rm=T)) stop("counts matrix contain negative values")
 
     return(count)
@@ -83,51 +102,35 @@ normalize_data <- function(count, method=c("tmm", "scran"), pseudo.count=0){
     return(count)
 }
 
-# process and transform data --------------------------------------------------
+# transform/normalize data --------------------------------------------------------------
 
-# read count data
-count = fread(countfile)
-
-# filter genes
-if (file.exists(genesfile)){
-    g = fread(genesfile, header=F)$V1
-    count = count[,..g]
-}
-
-# count dropout
-dropout = round(mean(count==0, na.rm=T), 3)
-print(paste0("dropout: ", dropout))
-dim(count)
-class(count)
-
-# handle zero
-if (dropout > 0){
-    handle_zero = TRUE
-    pseudo.count = 1
-}else{
-    handle_zero = FALSE
-}
-
-# clr-transform or normalize
 if (method_transf == "log2"){
-    if (handle_zero) count = replace_zero(count, method_zero)
+    count = replace_zero(count, method_zero)
     message("log-transforming data")
     count = log2(count)
+
 }else if(method_transf == "clr"){
-    if (handle_zero) count = replace_zero(count, method_zero)
+    count = replace_zero(count, method_zero)
     message("clr-transforming data")
     count = propr:::proprCLR(count)
+
 }else if(method_transf == "alr"){
     if (refgene == "NA"){
         stop("Make sure you are giving the correct reference gene index for ALR-transformation")
     }else{
         refgene = as.numeric(refgene)
     }
-    if (handle_zero) count = replace_zero(count, method_zero)
+    count = replace_zero(count, method_zero)
     message("alr-transforming data")
     count = propr:::proprALR(count, refgene)
+
 }else if (method_transf %in% c("tmm", "scran")){
-    count = normalize_data(count, method_transf, pseudo.count=1)   # THINK. Do we need to use zcompositions instead of a pseudocount of 1, to unify comparison with other methods? And control for zero imputation effect on the analysis?
+    if (method_zero == "pseudocount"){
+        pseudo.count = 1
+    }else{
+        pseudo.count = 0
+    }
+    count = normalize_data(count, method_transf, pseudo.count=pseudo.count)   # THINK. Do we need to use zcompositions instead of a pseudocount of 1, to unify comparison with other methods? And control for zero imputation effect on the analysis?
 }
 
 # save output
