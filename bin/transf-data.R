@@ -14,7 +14,7 @@ genesfile = args[5]   # list with the positions of the genes of interest
 refgene = args[6]    # reference gene index
 
 # check arguments
-if (! method_zero %in% c("zcompositions", "one", "min", "none", "pseudocount")){
+if (! method_zero %in% c("zcompositions", "one", "min", "none")){
     stop("wrong zero replacement method - ", method_zero)
 }else if (! method_transf %in% c("log2", "clr", "alr", "tmm", "scran")){
     stop("wrong transformation or normalization method - ", method_transf)
@@ -39,7 +39,7 @@ class(count)
 
 # functions -------------------------------------------------------------------
 
-replace_zero <- function(count, method=c("zcompositions", "one", "min", "pseudocount", "none")){
+replace_zero <- function(count, method=c("zcompositions", "one", "min", "none")){
 
     method = match.arg(method)
     if (!any(count==0, na.rm=T)) return(count)
@@ -58,9 +58,6 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min", "pseudoc
         count = as.matrix(count) 
         zeros = count == 0
         count[zeros] = min(count[!zeros])
-
-    }else if (method == "pseudocount"){
-        count = as.matrix(count + 1)
     }
 
     # check zeros and negative values
@@ -69,7 +66,7 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min", "pseudoc
     return(count)
 }
 
-normalize_data <- function(count, method=c("tmm", "scran"), pseudo.count=0){
+normalize_data <- function(count, method=c("tmm", "scran")){
     method = match.arg(method)
     message("normalizing data with method ", method)
     if (method == "tmm"){
@@ -84,8 +81,8 @@ normalize_data <- function(count, method=c("tmm", "scran"), pseudo.count=0){
         count = t(count) # it requires row=genes, col=cells
         y = DGEList(counts=count)   
         y = calcNormFactors(y, method="TMM")
-        count = cpm(y, log=T, prior.count=pseudo.count)   # it calculates the normalized count per million. So normalized counts = pseudocount / effective library size * 10E6, then the normalized count is log2-transformed
-        count = t(count)
+        effective.libsize = y$samples$lib.size * y$samples$norm.factors
+        count = t(count) / effective.libsize   # normalized count per million
     }else if (method == "scran"){
         require(scran)
         require(scuttle)
@@ -93,10 +90,9 @@ normalize_data <- function(count, method=c("tmm", "scran"), pseudo.count=0){
         count = t(count)   # it requires row=genes, col=cells
         sce = SingleCellExperiment(list(counts=count))
         clusters = quickCluster(sce)
-        sce = computeSumFactors(sce, clusters=clusters)  #compute the size factors
-        sce = logNormCounts(sce, pseudo.count=pseudo.count)   # compute log2(pseudocount / size factor)
-        count = assays(sce)[["logcounts"]]
-        count = t(count)
+        sce = computeSumFactors(sce, clusters=clusters)  
+        size.factor = sce@colData@listData$sizeFactor
+        count = t(count) / size.factor
     }
     # TODO add other popular normalization procedures
     return(count)
@@ -125,12 +121,9 @@ if (method_transf == "log2"){
     count = propr:::proprALR(count, refgene)
 
 }else if (method_transf %in% c("tmm", "scran")){
-    if (method_zero == "pseudocount"){
-        pseudo.count = 1
-    }else{
-        pseudo.count = 0
-    }
-    count = normalize_data(count, method_transf, pseudo.count=pseudo.count)   # THINK. Do we need to use zcompositions instead of a pseudocount of 1, to unify comparison with other methods? And control for zero imputation effect on the analysis?
+    count = normalize_data(count, method_transf)
+    count = replace_zero(count, method_zero)
+    count = log2(count)
 }
 
 # save output

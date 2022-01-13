@@ -21,6 +21,7 @@ process RELATIVE {
     Rscript ${baseDir}/bin/get-relative.R \
         ${count_file} \
         relative_${count_type2}.csv.gz
+        
     """
 }
 
