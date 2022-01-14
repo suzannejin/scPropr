@@ -49,7 +49,7 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min", "none"))
     # replace zero
     if (method == "zcompositions"){
         require(zCompositions)
-        count = cmultRepl(count, method="CZM", label=0, output="counts")  
+        count = cmultRepl(count, method="CZM", label=0, output="p-counts")  
 
     }else if (method == "one"){
         count[count == 0] = 1
