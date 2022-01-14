@@ -49,7 +49,15 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min", "none"))
     # replace zero
     if (method == "zcompositions"){
         require(zCompositions)
-        count = cmultRepl(count, method="CZM", label=0, output="p-counts")  
+        pars = as.character(formals(cmultRepl)$output)
+        if ("p-counts" %in% pars{
+            par = "p-counts"
+        }else if ("counts" %in% pars){
+            par = "counts"
+        }else{
+            stop("wrong output parameter for zCompositions")
+        }
+        count = cmultRepl(count, method="CZM", label=0, output=par])
 
     }else if (method == "one"){
         count[count == 0] = 1
