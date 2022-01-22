@@ -5,9 +5,16 @@ library(data.table)
 # usage: get-model.R <count> <features> <cell type> <output file> ---------------------
 args = commandArgs(trailingOnly = T)
 count = fread(args[1])   
-features = fread(args[2])$V1
-cell_type = args[3]
-out = args[4]
+features = fread(args[2], header=F)$V1
+phase = args[3]
+cell_type = args[4]
+out = args[5]
+
+# extract cells by cell cycle phase
+if (file.exists(phase)){
+    phase = fread(phase, header=F)$V1
+    count = count[phase,]
+}
 
 # rename and reorganize count data
 # sdDesign2 requires: row=gene, column=cell (labeled with cell type)

@@ -50,14 +50,14 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min", "none"))
     if (method == "zcompositions"){
         require(zCompositions)
         pars = as.character(formals(cmultRepl)$output)
-        if ("p-counts" %in% pars{
+        if ("p-counts" %in% pars){
             par = "p-counts"
         }else if ("counts" %in% pars){
             par = "counts"
         }else{
             stop("wrong output parameter for zCompositions")
         }
-        count = cmultRepl(count, method="CZM", label=0, output=par])
+        count = cmultRepl(count, method="CZM", label=0, output=par)
 
     }else if (method == "one"){
         count[count == 0] = 1
@@ -69,7 +69,7 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min", "none"))
     }
 
     # check zeros and negative values
-    if(any(count<0, na.rm=T)) stop("counts matrix contain negative values")
+    if(any(count<=0, na.rm=T)) stop("counts matrix contain zero and/or negative values")
 
     return(count)
 }

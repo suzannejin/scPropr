@@ -12,6 +12,10 @@ Channel
     .fromPath(params.count_file, checkIfExists:true)
     .map { it -> [ it.getParent().getParent().baseName, "absolute", "experimental", it ] }  
     .set { ch_count }
+// cell type
+ch_count
+    .map { it -> [it[0]] }
+    .set{ ch_cell }
 // feature (gene) names
 Channel
     .fromPath(params.features, checkIfExists:true)
@@ -22,11 +26,17 @@ Channel
     .fromPath(params.nozero_genes, checkIfExists:true)
     .map { it -> [ it.getParent().getParent().baseName, it ] }
     .set { ch_nozero }
+// cells from a given cell cycle phase
+Channel
+    .fromPath(params.phase_pos, checkIfExists:true)
+    .map { it -> [ it.getParent().getParent().baseName, it ] }
+    .set { ch_phase }
 
 // input for modeling step
 ch_count
     .combine( ch_features, by:0 )
-    .set { ch_input2model }  // cell_type, count_type1 (absolute/relative), count_type2 (experimental/simulated), count_file, features_file
+    .combine( ch_phase, by:0 )
+    .set { ch_input2model }  // cell_type, count_type1 (absolute/relative), count_type2 (experimental/simulated), count_file, features_file, phase_file
 
 
 ////////////////////////////////////////////////////
@@ -35,7 +45,7 @@ ch_count
 
 include { MODEL    } from "${baseDir}/modules/simulate.nf"
 include { SIMULATE } from "${baseDir}/modules/simulate.nf"
-include { CHECK_DROPOUT } from "${baseDir}/modules/simulate.nf"
+include { SIMULATE2} from "${baseDir}/modules/simulate.nf"
 include { RELATIVE } from "${baseDir}/modules/propr.nf"
 include { TRANSF   } from "${baseDir}/modules/propr.nf"
 include { CORR     } from "${baseDir}/modules/propr.nf"
@@ -47,25 +57,46 @@ include { CORR     } from "${baseDir}/modules/propr.nf"
 
 workflow {
 
-    if (params.simulate) {
+    if (params.model) {
 
     /* fit model */
-    MODEL(ch_input2model)
+    MODEL( ch_input2model )
     MODEL.out.ch_model
+        .set{ ch_model2 }
+
+    } else {
+
+    Channel
+        .fromPath(params.use_phase ? "${params.outdir}/*/model_phase/model.rds" : "${params.outdir}/*/model/model.rds")
+        .map{ it -> [ it.getParent().getParent().baseName, "absolute", "experimental", it ] }
+        .combine( ch_cell, by:0 )
+        .set{ ch_model2 }
+    }
+
+    if (params.simulate) {
+
+    ch_model2
         .combine( Channel.fromList(params.size_factors) )
-        .set { ch_model2simulate }
+        .set{ ch_model2simulate }
+    ch_model2
+        .combine( Channel.from(2..params.ncomb_max) )
+        .set{ ch_model2simulate2 }
 
     /* simulate data */
     SIMULATE(ch_model2simulate)
-    SIMULATE.out.ch_simulated
+    SIMULATE2(ch_model2simulate2)
+    SIMULATE2.out.ch_simulated2
+        .map{ it -> [ it[0], it[1], it[2].baseName.tokenize('.')[0], it[2] ] }
+        .mix(SIMULATE.out.ch_simulated)
         .mix(ch_count)
         .set{ ch_absolute }
 
     }else{
 
     Channel
-        .fromPath("${params.outdir}/*/simulate/simulate*.csv.gz")
+        .fromPath(params.use_phase ? "${params.outdir}/*/simulate_phase/{simulate,merged}*.csv.gz" : "${params.outdir}/*/simulate/{simulate,merged}*.csv.gz")
         .map{ it -> [ it.getParent().getParent().baseName, "absolute", it.baseName.tokenize(".")[0], it ] }
+        .combine( ch_cell, by:0 )
         .mix(ch_count)
         .set{ ch_absolute }
     }
@@ -86,7 +117,7 @@ workflow {
     TRANSF(ch_count2transf)
     TRANSF.out.ch_transf
           .combine( Channel.fromList(params.methods_corr.tokenize(",")) )
-          .filter{ (it[5] in ["log2", "clr", "alr"] ) || (it[7] == "cor") }
+        //   .filter{ (it[5] in ["log2", "clr", "alr"] ) || (it[7] == "cor") }
           .set { ch_transf2corr }
 
     /* compute association coefficients */
