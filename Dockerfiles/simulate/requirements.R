@@ -8,7 +8,9 @@ pkgs = c('R.utils',
          'gridExtra',
          'ggplot2',
          'ggpubr',
-         'cowplot'
+         'cowplot',
+         'argparse',
+         'optparse'
          )
 install.packages(pkgs)
 
