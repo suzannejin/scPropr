@@ -1,7 +1,7 @@
 .nextflow.log*
 .nextflow/
-results*/
-test*
-data/
-./jupyter/
-work/
+/results*/
+/test*
+/data/
+/jupyter/
+/work/
