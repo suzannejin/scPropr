@@ -11,7 +11,6 @@ refgene = args[4]
 
 # read count data
 count = fread(countfile)
-ngenes = dim(count)[1]
 
 # compute association coefficients ------------------------------------------------------
 corr = propr(count, metric=coef, ivar=NA, p=0)@matrix  

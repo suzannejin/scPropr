@@ -85,7 +85,13 @@ process CORR {
 
     output:
     tuple val(cell_type), \
+          val(count_type1), \
+          val(count_type2), \
           file("${count_type1}_${count_type2}_${method_zero}_${method_transf}_${ref_gene}_${method_corr}.csv.gz"), \
+          val(method_zero), \
+          val(method_transf), \
+          val(ref_gene), \
+          val(method_corr), \
           emit: ch_corr
 
     script:

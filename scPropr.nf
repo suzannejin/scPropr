@@ -49,6 +49,10 @@ include { SIMULATE2} from "${baseDir}/modules/simulate.nf"
 include { RELATIVE } from "${baseDir}/modules/propr.nf"
 include { TRANSF   } from "${baseDir}/modules/propr.nf"
 include { CORR     } from "${baseDir}/modules/propr.nf"
+include { PLOT_ABS_VS_REL_TRANSF  } from "${baseDir}/modules/plot.nf"
+include { PLOT_ABS2_VS_REL_TRANSF } from "${baseDir}/modules/plot.nf"
+include { PLOT_ABS_VS_REL_CORR    } from "${baseDir}/modules/plot.nf"
+include { PLOT_ABS2_VS_REL_CORR   } from "${baseDir}/modules/plot.nf"
 
 
 ////////////////////////////////////////////////////
@@ -122,4 +126,21 @@ workflow {
 
     /* compute association coefficients */
     CORR(ch_transf2corr)
+
+    /* plot figures */
+    TRANSF.out.ch_transf
+        .filter{ (it[4] == params.show_methods_replace_zero) && (it[6] in ["NA", params.show_alr]) }
+        .groupTuple(by:[0,2])
+        .map{ it -> [ it[0], it[2], it[3] ] }
+        .set{ ch_transf2plot }
+    CORR.out.ch_corr
+        .filter{ (it[4] == params.show_methods_replace_zero) && (it[6] in ["NA", params.show_alr]) }
+        .groupTuple(by:[0,2])
+        .map{ it -> [ it[0], it[2], it[3] ] }
+        .set{ ch_corr2plot }
+    PLOT_ABS_VS_REL_TRANSF(ch_transf2plot)
+    PLOT_ABS2_VS_REL_TRANSF(ch_transf2plot)
+    PLOT_ABS_VS_REL_CORR(ch_corr2plot)
+    PLOT_ABS2_VS_REL_CORR(ch_corr2plot)
+
 }
