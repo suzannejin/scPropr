@@ -70,6 +70,8 @@ RUN pip install jupyter-resource-usage
 # INSTALL REQUIREMENTS #
 # ==================== #
 
+# install argument parsing tools
+RUN R -e "install.packages(c('argparse','optparse'))"
 # install data processing R packages
 RUN R -e "install.packages(c('R.utils','data.table','reshape2','anndata'))" 
 # install visualization tools

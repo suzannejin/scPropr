@@ -2,6 +2,8 @@
 pkgs = c("R.utils",
          "data.table",
          "GGally",
-         "ggpubr"
+         "ggpubr",
+         "argparse",
+         "optparse"
          )
 install.packages(pkgs)
