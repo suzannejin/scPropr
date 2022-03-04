@@ -4,6 +4,9 @@ pkgs = c("R.utils",
          "GGally",
          "ggpubr",
          "argparse",
-         "optparse"
+         "optparse",
+         'this.path',
+         'here',
+         'import'
          )
 install.packages(pkgs)

@@ -1,19 +1,21 @@
+#!/usr/bin/env Rscript
+
 library(scDesign2)
 library(copula)   
 library(data.table)
 
-# usage: get-model.R <count> <features> <cell type> <output file> ---------------------
+# usage: get-model.R <count> <features> <barcodes pos> <cell type> <output file> ---------------------
 args = commandArgs(trailingOnly = T)
 count = fread(args[1])   
 features = fread(args[2], header=F)$V1
-phase = args[3]
+barcodes_pos = args[3]
 cell_type = args[4]
 out = args[5]
 
-# extract cells by cell cycle phase
+# extract cells given positions
 if (file.exists(phase)){
-    phase = fread(phase, header=F)$V1
-    count = count[phase,]
+    pos = fread(barcodes_pos, header=F)$V1
+    count = count[pos,]
 }
 
 # rename and reorganize count data

@@ -1,35 +1,32 @@
+#!/usr/bin/env Rscript
+
+library(argparse)
 library(data.table)
 library(propr)
-# library(propr, lib.loc=paste0(.libPaths()[1], "/propr_sjin"))
 
-# get arguments ---------------------------------------------------------------
-
-# get arguments
-args = commandArgs(trailingOnly = T)
-countfile = args[1] # observations x features matrix
-output = args[2]
-method_zero = args[3]    # zcompositions, one, min, none, pseudocount
-method_transf = args[4]  # tmm, log2, clr
-genesfile = args[5]   # list with the positions of the genes of interest
-refgene = args[6]    # reference gene index
+# parse arguments
+parser = ArgumentParser(description='Transform and normalize count data. Also save the normalization factors.')
+parser$add_argument('-i', '--input', type='character', help="Input count data")
+parser$add_argument('-o', '--output', type='character', help="Output count data, if required")
+parser$add_argument('-o2', '--output2', type='character', help="Output size factor file")
+parser$add_argument('--method_zero', type='character', help="Zero handling method. Choices = [zcompositions, one, min]")
+parser$add_argument('--method_transf', type='character', help="Transformation or normalization method. Choices = [log2, clr, alr, tmm, scran]")
+parser$add_argument('--ref_gene', type='integer', help="Reference gene index. This is required to compute alr.")
+parser = parser$parse_args()
 
 # check arguments
-if (! method_zero %in% c("zcompositions", "one", "min", "none")){
+if (!is.null(parser$method_zero) && !( parser$method_zero %in% c("zcompositions", "one", "min") )){
     stop("wrong zero replacement method - ", method_zero)
-}else if (! method_transf %in% c("log2", "clr", "alr", "tmm", "scran")){
+}
+if (!is.null(parser$method_transf) && !( parser$method_transf %in% c("log2", "clr", "alr", "tmm", "scran") )){
     stop("wrong transformation or normalization method - ", method_transf)
 }
+
 
 # read and process data --------------------------------------------------------
 
 # read count data
-count = fread(countfile)
-
-# filter genes
-if (file.exists(genesfile)){
-    g = fread(genesfile, header=F)$V1
-    count = count[,..g]
-}
+count = fread(parser$input)
 
 # count dropout
 dropout = round(mean(count==0, na.rm=T), 3)
@@ -39,11 +36,10 @@ class(count)
 
 # functions -------------------------------------------------------------------
 
-replace_zero <- function(count, method=c("zcompositions", "one", "min", "none")){
+replace_zero <- function(count, method=c("zcompositions", "one", "min")){
 
     method = match.arg(method)
     if (!any(count==0, na.rm=T)) return(count)
-    if (method == "none") return(count)
     message("replacing zeros with method ", method)
 
     # replace zero
@@ -89,7 +85,8 @@ normalize_data <- function(count, method=c("tmm", "scran")){
         count = t(count) # it requires row=genes, col=cells
         y = DGEList(counts=count)   
         y = calcNormFactors(y, method="TMM")
-        effective.libsize = y$samples$lib.size * y$samples$norm.factors
+        size.factor = y$samples$norm.factors
+        effective.libsize = y$samples$lib.size * size.factor
         count = t(count) / effective.libsize   # normalized count per million
     }else if (method == "scran"){
         require(scran)
@@ -103,36 +100,46 @@ normalize_data <- function(count, method=c("tmm", "scran")){
         count = t(count) / size.factor
     }
     # TODO add other popular normalization procedures
-    return(count)
+    norm = list(count = count, size.factor = size.factor)
+    return(norm)
+}
+
+calculate_geom_mean <-  function(count){
+    gm = apply( count, 1, function(x) exp(mean(log(x[x!=0]))) )
+    return(gm)
 }
 
 # transform/normalize data --------------------------------------------------------------
 
-if (method_transf == "log2"){
-    count = replace_zero(count, method_zero)
-    message("log-transforming data")
-    count = log2(count)
+if (parser$method_transf %in% c('log2', 'clr', 'alr')){
+    if(!is.null(parser$method_zero)) count = replace_zero(count, parser$method_zero)
 
-}else if(method_transf == "clr"){
-    count = replace_zero(count, method_zero)
-    message("clr-transforming data")
-    count = propr:::proprCLR(count)
+    if (parser$method_transf == "log2"){
+        message("log-transforming data")
+        count = log2(count)
 
-}else if(method_transf == "alr"){
-    if (refgene == "NA"){
-        stop("Make sure you are giving the correct reference gene index for ALR-transformation")
-    }else{
-        refgene = as.numeric(refgene)
+    }else if(parser$method_transf == "clr"){
+        message("clr-transforming data")
+        # count = propr:::proprCLR(count)
+        size.factor = calculate_geom_mean(count)
+        count = log(count / size.factor)
+
+    }else if(parser$method_transf == "alr"){
+        if (!is.numeric(parser$ref_gene)) stop("Make sure you are giving the correct reference gene index for ALR-transformation")
+        message("alr-transforming data")
+        size.factor = count[[parser$ref_gene]]
+        count = propr:::proprALR(count, parser$ref_gene)
     }
-    count = replace_zero(count, method_zero)
-    message("alr-transforming data")
-    count = propr:::proprALR(count, refgene)
 
-}else if (method_transf %in% c("tmm", "scran")){
-    count = normalize_data(count, method_transf)
-    count = replace_zero(count, method_zero)
+}else if (parser$method_transf %in% c("tmm", "scran")){
+    norm  = normalize_data(count, parser$method_transf)
+    count = norm$count
+    if(!is.null(parser$method_zero)) count = replace_zero(count, parser$method_zero)
     count = log2(count)
+    size.factor = norm$size.factor
 }
 
 # save output
-fwrite(count, file=output, quote=F, sep=",", row.names=F, col.names=F, compress="gzip")
+message("saving output files")
+fwrite(count, file=parser$output, quote=F, sep=",", row.names=F, col.names=F, compress="gzip")
+if (parser$method_transf != 'log2') fwrite(data.frame(size.factor), file=parser$output2, quote=F, sep=",", row.names=F, col.names=F)

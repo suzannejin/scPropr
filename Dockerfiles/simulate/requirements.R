@@ -10,7 +10,10 @@ pkgs = c('R.utils',
          'ggpubr',
          'cowplot',
          'argparse',
-         'optparse'
+         'optparse',
+         'this.path',
+         'here',
+         'import'
          )
 install.packages(pkgs)
 
