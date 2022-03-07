@@ -9,7 +9,6 @@ process SIMULATE_DATA_BYDEPTH {
 
     input:
     val dataset
-    path count
     path model
     val size_factor
 
@@ -36,7 +35,6 @@ process SIMULATE_DATA_BYSLOPE {
 
     input:
     val dataset
-    path count
     path model
     val slope
     val ndata
@@ -44,7 +42,7 @@ process SIMULATE_DATA_BYSLOPE {
     output:
     val dataset, emit: ch_dataset
     val "simulate+s${slope}n${ndata}byslope", emit: ch_type1
-    path "${dataset}_simulate+s${slope}n${nadata}byslope_absolute.csv.gz", emit: ch_simulated
+    path "${dataset}_simulate+s${slope}n${ndata}byslope_absolute.csv.gz", emit: ch_simulated
 
     script:
     """
@@ -66,7 +64,6 @@ process SIMULATE_DATA_BYSTEP {
 
     input:
     val dataset
-    path count
     path model
     val slope
     val ndata
@@ -74,7 +71,7 @@ process SIMULATE_DATA_BYSTEP {
     output:
     val dataset, emit: ch_dataset
     val "simulate+s${slope}n${ndata}bystep", emit: ch_type1
-    path "${dataset}_simulate+s${slope}n${nadata}bystep_absolute.csv.gz", emit: ch_simulated
+    path "${dataset}_simulate+s${slope}n${ndata}bystep_absolute.csv.gz", emit: ch_simulated
 
     script:
     """

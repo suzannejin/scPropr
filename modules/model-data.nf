@@ -5,7 +5,7 @@ process MODEL_DATA {
 
     container 'suzannejin/scpropr:simulate'
 
-    tag "${cell_type}"
+    tag "${dataset}"
     storeDir "${params.outdir}/${dataset}/model"
 
     input:

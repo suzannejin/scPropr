@@ -43,7 +43,7 @@ get_nreads_ncells <- function(model, seqdepth){
     ncells   = c()
     for (i in 1:length(seqdepth)){
         nreads[i] = round( as.numeric(model$n_read) * seqdepth[i] / ndata )
-        ncells[i] = as.numeric(model$n_cell) / ndata
+        ncells[i] = round( as.numeric(model$n_cell) / ndata )
     }
     return(list(nreads, ncells))
 }

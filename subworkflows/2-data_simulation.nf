@@ -17,7 +17,6 @@ workflow DATA_SIMULATION {
     take:
     ch_count
     ch_features
-    ch_barcodes
     ch_barcodes_sim
     ch_size_factor
     ch_slope
@@ -25,11 +24,13 @@ workflow DATA_SIMULATION {
 
     main:
 
-    dataset = ch_count.map{ it -> [it[0]] }.flatten() 
-    count   = ch_count.map{ it -> [it[3]] }.flatten() 
-    
+    dataset  = ch_count.map{ it -> [it[0]] }.flatten() 
+    count    = ch_count.map{ it -> [it[3]] }.flatten() 
+    features = ch_features.map{ it -> [it[1]] }.flatten()
+    barcodes_sim = ch_barcodes_sim.map{ it -> [it[1]] }.flatten()
+
     /* model data */
-    MODEL_DATA(dataset, count, ch_features, ch_barcodes_sim)
+    MODEL_DATA(dataset, count, features, barcodes_sim)
 
     /* simulate data */
     ch_dataset2simulate = MODEL_DATA.out.ch_dataset

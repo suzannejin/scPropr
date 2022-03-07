@@ -29,6 +29,9 @@ Channel
     .set { ch_barcodes_sim }
 // simulation parameters
 Channel
+    .fromList(params.simulation_dataset)
+    .set { ch_simulation_dataset }
+Channel
     .fromList(params.simulation_size_factors)
     .set { ch_size_factor }
 Channel
@@ -51,26 +54,35 @@ include { DATA_SIMULATION }  from "${launchDir}/subworkflows/2-data_simulation.n
 
 workflow{
 
-    // subworkflow: data exploration initial plots
-    DATA_EXPLORATION(ch_count)
-
-
     // subworkflow: model and simulate data with scDesign2
+    ch_count
+        .combine(ch_simulation_dataset, by:0)
+        .set{ ch_count2simulation }
+    ch_features
+        .combine(ch_simulation_dataset, by:0)
+        .set{ ch_features2simulation }
+    ch_barcodes_sim
+        .combine(ch_simulation_dataset, by:0)
+        .set{ ch_barcodessim2simulation}
+
     DATA_SIMULATION(
-        ch_count,
-        ch_features,
-        ch_barcodes,
-        ch_barcodes_sim,
+        ch_count2simulation,
+        ch_features2simulation,
+        ch_barcodessim2simulation,
         ch_size_factor,
         ch_slope_ndata.slope,
         ch_slope_ndata.ndata
     )
     DATA_SIMULATION.out.dataset
-        .merge( DATA_SIMULATION.out.type1 )
+        .join( DATA_SIMULATION.out.type1 )
         .combine( Channel.from('absolute') )
-        .merge( DATA_SIMULATION.out.simulated )
+        .join( DATA_SIMULATION.out.simulated )
         .set{ ch_simulated }
-    // plot basic figures for simulated data as well
-    DATA_EXPLORATION(ch_simulated)
+
+    // subworkflow: plot basic figures for experimental and simulated data 
+    ch_count
+        .mix( ch_simulated )
+        .set{ ch_count_simulated }
+    DATA_EXPLORATION( ch_count_simulated )
 }
 

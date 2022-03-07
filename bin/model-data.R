@@ -13,7 +13,7 @@ cell_type = args[4]
 out = args[5]
 
 # extract cells given positions
-if (file.exists(phase)){
+if (file.exists(barcodes_pos)){
     pos = fread(barcodes_pos, header=F)$V1
     count = count[pos,]
 }
