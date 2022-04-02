@@ -2,27 +2,41 @@
 /* Plot rna per cell, gene per cell, and sample sequencing depth */
 
 process PLOT_SEQDEPTH_VIOLIN_BARPLOT {
-    tag "${type1}_${type2}"
+    label 'process_low_short'
+    tag "$dataset-$full-$abs_rel"
     container 'suzannejin/scpropr:plot'
-    publishDir "${params.outdir}/plot/seqdepth", mode: params.publish_dir_mode
+    publishDir "${params.outdir}/${dataset}/plot/seqdepth/${dataset}_${full}_${abs_rel}", mode: params.publish_dir_mode
 
     input:
-    val datasets
-    path counts
-    val type1
-    val type2
-
+    tuple val(dataset),
+          val(exp_sim),
+          val(full),
+          val(abs_rel),
+          file(count)
+    
     output:
-    path "seqdepth-violin-barplot-${type1}-${type2}.png"
+    file "seqdepth-violin-barplot.png"
+    file ".command.trace"
+    file ".command.sh"
 
     script:
-    def dat = datasets.join(' ')
+    def exp_sims = exp_sim.join(' ')
+    def counts   = count.join(' ')
     """
     plot-seqdepth-violin-barplot.R \
-        -i ${counts} \
-        -n ${dat} \
-        -o .
+        -i $counts \
+        -n $exp_sims \
+        -o seqdepth-violin-barplot.png
+    """
 
-    mv seqdepth-violin-barplot.png seqdepth-violin-barplot-${type1}-${type2}.png
+    stub:
+    def exp_sims = exp_sim.join(' ')
+    def counts   = count.join(' ')
+    """
+    echo plot-seqdepth-violin-barplot.R \
+        -i $counts \
+        -n $exp_sims \
+        -o seqdepth-violin-barplot.png
+    touch seqdepth-violin-barplot.png
     """
 }

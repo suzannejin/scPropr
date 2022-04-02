@@ -9,9 +9,10 @@ parser = ArgumentParser(description='Transform and normalize count data. Also sa
 parser$add_argument('-i', '--input', type='character', help="Input count data")
 parser$add_argument('-o', '--output', type='character', help="Output count data, if required")
 parser$add_argument('-o2', '--output2', type='character', help="Output size factor file")
+parser$add_argument('--features', type='character')
 parser$add_argument('--method_zero', type='character', help="Zero handling method. Choices = [zcompositions, one, min]")
 parser$add_argument('--method_transf', type='character', help="Transformation or normalization method. Choices = [log2, clr, alr, tmm, scran]")
-parser$add_argument('--ref_gene', type='integer', help="Reference gene index. This is required to compute alr.")
+parser$add_argument('--refgene', type='character', help="Reference gene index. This is required to compute alr.")
 parser = parser$parse_args()
 
 # check arguments
@@ -25,8 +26,14 @@ if (!is.null(parser$method_transf) && !( parser$method_transf %in% c("log2", "cl
 
 # read and process data --------------------------------------------------------
 
-# read count data
-count = fread(parser$input)
+# read input data
+count    = fread(parser$input, header=F)
+features = fread(parser$features, header=F)$V1
+if ( length(features) != ncol(count) ) stop("length(features) != ncol(count)")
+if (!is.null(parser$refgene)){
+    nrefgene  = which( toupper(features) == toupper(parser$refgene) )
+    if (length(nrefgene) == 0) stop("wrong reference gene")
+}
 
 # count dropout
 dropout = round(mean(count==0, na.rm=T), 3)
@@ -64,6 +71,8 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min")){
         count[zeros] = min(count[!zeros])
     }
 
+    # TODO add scImpute, etc zero handling methods for single cell
+
     # check zeros and negative values
     if(any(count<=0, na.rm=T)) stop("counts matrix contain zero and/or negative values")
 
@@ -98,6 +107,7 @@ normalize_data <- function(count, method=c("tmm", "scran")){
         sce = computeSumFactors(sce, clusters=clusters)  
         size.factor = sce@colData@listData$sizeFactor
         count = t(count) / size.factor
+        ## TODO count = log1p( t( t(count) / centered.size.factor ) ) / log(2)
     }
     # TODO add other popular normalization procedures
     norm = list(count = count, size.factor = size.factor)
@@ -125,10 +135,10 @@ if (parser$method_transf %in% c('log2', 'clr', 'alr')){
         count = log(count / size.factor)
 
     }else if(parser$method_transf == "alr"){
-        if (!is.numeric(parser$ref_gene)) stop("Make sure you are giving the correct reference gene index for ALR-transformation")
+        if (!is.numeric(nrefgene)) stop("Make sure you are giving the correct reference gene index for ALR-transformation")
         message("alr-transforming data")
-        size.factor = count[[parser$ref_gene]]
-        count = propr:::proprALR(count, parser$ref_gene)
+        size.factor = count[,nrefgene]
+        count = propr:::proprALR(count, nrefgene)
     }
 
 }else if (parser$method_transf %in% c("tmm", "scran")){
@@ -142,4 +152,8 @@ if (parser$method_transf %in% c('log2', 'clr', 'alr')){
 # save output
 message("saving output files")
 fwrite(count, file=parser$output, quote=F, sep=",", row.names=F, col.names=F, compress="gzip")
-if (parser$method_transf != 'log2') fwrite(data.frame(size.factor), file=parser$output2, quote=F, sep=",", row.names=F, col.names=F)
+if (parser$method_transf != 'log2') {
+    fwrite(data.frame(size.factor), file=parser$output2, quote=F, sep=",", row.names=F, col.names=F)
+} else {
+    file.create(parser$output2)
+}

@@ -3,28 +3,46 @@
 
 process MODEL_DATA {
 
+    label 'process_high_long'
     container 'suzannejin/scpropr:simulate'
-
     tag "${dataset}"
     storeDir "${params.outdir}/${dataset}/model"
+    // publishDir "${params.outdir}/${dataset}/model", mode: params.publish_dir_mode
+    // TODO be able to model based on different homogeneous populations
+    // for this I need to change the entire pipeline, to add another variable 'population'
 
     input:
-    val dataset
-    path count
-    path features
-    path barcodes_sim
+    tuple val(dataset),
+          val(exp_sim),
+          val(full),
+          val(abs_rel),
+          file(count),
+          file(features),
+          file(barcodes)
 
     output:
-    val dataset, emit: ch_dataset
-    path "${dataset}_model.rds", emit: ch_model
+    tuple file("${dataset}_model.rds"), 
+          file(features), 
+          file(barcodes),
+          file(".command.trace"),
+          file(".command.sh")
 
     script:
     """
     model-data.R \
         $count \
         $features \
-        $barcodes_sim \
         $dataset \
         ${dataset}_model.rds
+    """
+
+    stub:
+    """
+    echo model-data.R \
+        $count \
+        $features \
+        $dataset \
+        ${dataset}_model.rds
+    touch ${dataset}_model.rds
     """
 }

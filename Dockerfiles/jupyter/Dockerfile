@@ -80,6 +80,8 @@ RUN R -e "install.packages(c('ggplot2','GGally','ggpubr','egg','UpSetR','VennDia
 RUN R -e "install.packages(c('ppcor','corpcor'))"
 # install zero imputation packages
 RUN R -e "install.packages(c('zCompositions'))"
+# easyCODA
+RUN R -e "install.packages( c('vegan','easyCODA') )"
 # install proportionality package
 RUN R -e "devtools::install_github('tpq/propr@83dc0c54caac5f4e5b334fe31b953cc2469cf155')"
 # install R single cell package

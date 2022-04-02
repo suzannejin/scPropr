@@ -1,19 +1,25 @@
 process PLOT_DROPOUT {
-    tag "${dataset}_${type1}_${type2}"
+    label 'process_low_short'
+    tag "$dataset-$exp_sim-$full-$abs_rel"
     container 'suzannejin/scpropr:plot'
-    publishDir "${params.outdir}/${dataset}/${type1}/plot/dropout/${type2}", mode: params.publish_dir_mode
+    publishDir "${params.outdir}/${dataset}/plot/dropout/${dataset}_${exp_sim}_${full}_${abs_rel}", mode: params.publish_dir_mode
 
     input:
-    val dataset
-    path count
-    val type1
-    val type2
+    tuple val(dataset),
+          val(exp_sim),
+          val(full),
+          val(abs_rel),
+          file(count),
+          file(features),
+          file(barcodes)
 
     output:
-    path "dropout"
-    path "dropout.png"
-    path "nozero_cells"
-    path "nozero_genes"
+    file "dropout"
+    file "dropout.png"
+    file "nozero_cells"
+    file "nozero_genes"
+    file ".command.trace"
+    file ".command.sh"
 
     script:
     """
@@ -21,5 +27,14 @@ process PLOT_DROPOUT {
         $count \
         $dataset \
         .
+    """
+
+    stub:
+    """
+    echo plot-dropout.R \
+        $count \
+        $dataset \
+        .
+    touch dropout dropout.png nozero_cells nozero_genes
     """
 }

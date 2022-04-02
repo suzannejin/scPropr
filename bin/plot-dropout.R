@@ -20,7 +20,7 @@ write(dropout, file=paste0(outdir,'/dropout'))
 # dropout histogram
 r = rowMeans(count==0, na.rm=T)  # dropout per cell
 c = colMeans(count==0, na.rm=T)  # dropout per gene
-png(filename=paste0(outdir,'/dropout.png'), width=500, height=280)
+png(filename=paste0(outdir,'/dropout.png'), width=800, height=380, res=100)
 par(mfrow=c(1,2), oma=c(0,0,2,0))
 hist(r, xlab="Dropout per cell", main=NA)
 hist(c, xlab="Dropout per gene", main=NA)

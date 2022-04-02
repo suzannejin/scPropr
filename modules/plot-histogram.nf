@@ -1,21 +1,28 @@
 process PLOT_HISTOGRAM {
-    tag "${dataset}_${type1}_${type2}"
+    label 'process_low_short'
+    tag "$dataset-$exp_sim-$full-$abs_rel"
     container 'suzannejin/scpropr:plot'
-    publishDir "${params.outdir}/${dataset}/${type1}/plot/histogram/${type2}", mode: params.publish_dir_mode
+    publishDir "${params.outdir}/${dataset}/plot/histogram/${dataset}_${exp_sim}_${full}_${abs_rel}", mode: params.publish_dir_mode
 
     input:
-    val dataset
-    path count
-    val type1
-    val type2
+    tuple val(dataset),
+          val(exp_sim),
+          val(full),
+          val(abs_rel),
+          file(count),
+          file(features),
+          file(barcodes)
 
     output:
-    path "histogram-libsize*.png"
-    path "histogram-geomean*.png"
-    path "histogram-cellmean*.png"
-    path "histogram-cellvar*.png"
-    path "histogram-genemean*.png"
-    path "histogram-genevar*.png"
+    path "histogram-libsize-percell.png"
+    path "histogram-geomean-percell.png"
+    path "histogram-mean-percell.png"
+    path "histogram-var-percell.png"
+    path "histogram-geomean-pergene.png"
+    path "histogram-mean-pergene.png"
+    path "histogram-var-pergene.png"
+    path ".command.trace"
+    path ".command.sh"
 
     script:
     """
@@ -43,6 +50,12 @@ process PLOT_HISTOGRAM {
         $count \
         $dataset \
         . \
+        --geomean \
+        --bygene
+    plot-histogram.R \
+        $count \
+        $dataset \
+        . \
         --mean \
         --bygene
     plot-histogram.R \
@@ -51,5 +64,16 @@ process PLOT_HISTOGRAM {
         . \
         --var \
         --bygene
+    """
+
+    stub:
+    """
+    touch histogram-libsize-percell.png
+    touch histogram-geomean-percell.png
+    touch histogram-mean-percell.png
+    touch histogram-var-percell.png
+    touch histogram-geomean-pergene.png
+    touch histogram-mean-pergene.png
+    touch histogram-var-pergene.png
     """
 }
