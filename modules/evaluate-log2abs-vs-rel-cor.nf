@@ -5,7 +5,7 @@ process EVALUATE_LOG2ABS_VS_REL_COR {
     label 'process_high'
     container 'suzannejin/scpropr:propr'
     tag "${dataset}-${exp_sim}-${full}-${method_replace_zero}-${method_transform_data}-${refgene}-${method_cor}-${method_eval}"
-    publishDir "${params.outdir}/${dataset}/evaluate/${method_eval}/${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}", mode: params.publish_dir_mode
+    storeDir "${params.outdir}/${dataset}/evaluate/${method_eval}/${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}"
 
     input:
     tuple val(dataset), 

@@ -5,12 +5,13 @@ library(data.table)
 library(easyCODA)
 
 # parse arguments
-parser = ArgumentParser(description='Get reference gene for ALR-transformation')
+parser = ArgumentParser(description='Compute procrustes analysis')
 parser$add_argument('input', type='character', help="Input count data")
+parser$add_argument('output', type='character', help="Output stat file")
 parser$add_argument('method', type='character', help="Zero handling method")
 parser = parser$parse_args()
 
-# functions -------------------------------------------------------------------
+# functions -----------------------------------------------------------------------------
 
 replace_zero <- function(count, method=c("zcompositions", "one", "min")){
 
@@ -61,15 +62,18 @@ FINDALR <- function(data, weight = FALSE) {
   if(sum(data[1,]!=1)) data <- data/rowSums(data)
   
   ### first compute the exact logratio geometry
-  data.lra <- LRA(data, weight=weight)
+  message("computing the exact logratio geometrcy")
+  data.lra <- LRA(data, weight=weight)  ## this needs non-zero data
   data.lra.rpc <- data.lra$rowpcoord 
   tot.var <- sum(data.lra$sv^2)
   
   ### loop on all the potential references, computing Procrustes correlation
   ### of each set of ALRs with the exact geometry
+  message("computing the procrates correlation")
   procrust.cor <- rep(0, ncol(data))
   dim <- min(nrow(data), ncol(data)) - 1
   for(j in 1:ncol(data)) {
+    message("...for gene ", j)
     # ALR transformation
     alr <- ALR(data, denom=j, weight=weight)
     # ALR geometry using PCA 'by hand' using SVD, without or with weighting
@@ -86,6 +90,7 @@ FINDALR <- function(data, weight = FALSE) {
     }
     procrust.cor[j] <- protest(alr.rpc[,1:dim],data.lra.rpc, permutations=0)$t0
   }
+  message("organizing stats")
 
   ### the variances of the log-transformed parts
   var.log <- as.numeric(apply(log(data), 2, var))
@@ -108,13 +113,13 @@ FINDALR <- function(data, weight = FALSE) {
 }
 
 
-# read input data
+# read and process input data -----------------------------------------------------------
 count = fread(parser$input)
-
-# replace zeros
 count = replace_zero(count, method=parser$method)
 
-# compute stats
+# compute stats -------------------------------------------------------------------------
 stat = FINDALR(count)
+stat = as.data.frame(stat)
 
-print(stat)
+# write output
+fwrite(stat, file=parser$output, quote=F, sep=",", row.names=F, col.names=T, compress="gzip")

@@ -6,7 +6,7 @@ process MODEL_DATA {
     label 'process_high_long'
     container 'suzannejin/scpropr:simulate'
     tag "${dataset}"
-    storeDir "${params.outdir}/${dataset}/model"
+    storeDir "${params.outdir}/${dataset}/model/${exp_sim}"
     // publishDir "${params.outdir}/${dataset}/model", mode: params.publish_dir_mode
     // TODO be able to model based on different homogeneous populations
     // for this I need to change the entire pipeline, to add another variable 'population'
@@ -21,7 +21,7 @@ process MODEL_DATA {
           file(barcodes)
 
     output:
-    tuple file("${dataset}_model.rds"), 
+    tuple file("${dataset}_${exp_sim}_model.rds"), 
           file(features), 
           file(barcodes),
           file(".command.trace"),
@@ -33,7 +33,7 @@ process MODEL_DATA {
         $count \
         $features \
         $dataset \
-        ${dataset}_model.rds
+        ${dataset}_${exp_sim}_model.rds
     """
 
     stub:
@@ -43,6 +43,6 @@ process MODEL_DATA {
         $features \
         $dataset \
         ${dataset}_model.rds
-    touch ${dataset}_model.rds
+    touch ${dataset}_${exp_sim}_model.rds
     """
 }

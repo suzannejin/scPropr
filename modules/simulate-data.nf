@@ -4,8 +4,8 @@ process SIMULATE_DATA_BYDEPTH {
 
     container 'suzannejin/scpropr:simulate'
     tag "${dataset}_simulate+${size_factor}"
-    publishDir "${params.outdir}/${dataset}/simulated/${dataset}_simulate+${size_factor}", mode: params.publish_dir_mode
-    // storeDir "${params.outdir}/${dataset}/simulated/${dataset}_simulate+${size_factor}"
+    storeDir "${params.outdir}/${dataset}/simulated/${dataset}_simulate+${size_factor}"
+    // publishDir "${params.outdir}/${dataset}/simulated/${dataset}_simulate+${size_factor}", mode: params.publish_dir_mode
 
     input:
     tuple val(dataset),
@@ -50,8 +50,8 @@ process SIMULATE_DATA_BYSLOPE {
 
     container 'suzannejin/scpropr:simulate'
     tag "${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}"
-    publishDir "${params.outdir}/${dataset}/simulated/${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}+byslope", mode: params.publish_dir_mode
-    // storeDir "${params.outdir}/${dataset}/simulated/${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}+byslope"
+    storeDir "${params.outdir}/${dataset}/simulated/${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}+byslope"
+    // publishDir "${params.outdir}/${dataset}/simulated/${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}+byslope", mode: params.publish_dir_mode
 
     input:
     tuple val(dataset),
@@ -104,8 +104,8 @@ process SIMULATE_DATA_BYSTEP {
 
     container 'suzannejin/scpropr:simulate'
     tag "${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}"
-    publishDir "${params.outdir}/${dataset}/simulated/${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}+byslope", mode: params.publish_dir_mode
-    // storeDir "${params.outdir}/${dataset}/simulated/${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}+bystep"
+    storeDir "${params.outdir}/${dataset}/simulated/${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}+bystep"
+    // publishDir "${params.outdir}/${dataset}/simulated/${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}+bystep", mode: params.publish_dir_mode
 
     input:
     tuple val(dataset),
