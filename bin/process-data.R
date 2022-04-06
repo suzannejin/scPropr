@@ -46,7 +46,7 @@ class(count)
 replace_zero <- function(count, method=c("zcompositions", "one", "min")){
 
     method = match.arg(method)
-    if (!any(count==0, na.rm=T)) return(count)
+    if (!any(count==0, na.rm=T)) return(as.matrix(count))
     message("replacing zeros with method ", method)
 
     # replace zero

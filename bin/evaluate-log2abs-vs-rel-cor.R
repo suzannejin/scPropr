@@ -2,6 +2,7 @@
 
 library(argparse)
 library(data.table)
+library(propr)
 
 # parse arguments
 parser = ArgumentParser(description='Calculate a metric evaluating the coefficients on absolute vs relative data.')
@@ -9,7 +10,7 @@ parser$add_argument('--abs', type='character', help="Coefficients on log2 absolu
 parser$add_argument('--rel', type='character', help="Coefficients on transformed relative data")
 parser$add_argument('--features', type='character', help="List of gene names")
 parser$add_argument('--out', type='character', help="Output filename containing the metric")
-parser$add_argument('--method', type='character', help="Metric method. Choices: [pearson, spearman, kendall]")
+parser$add_argument('--method', type='character', help="Metric method. Choices: [pearson, spearman, kendall, rho]")
 parser = parser$parse_args()
 
 parse_file <- function(filename){
@@ -31,9 +32,15 @@ get_mat <- function(filename, nrefgene){
 }
 
 compute.cor <- function(abs, rel, method){
-    res = cor.test(abs, rel, method=method)
-    out = data.frame(method = method, coef = as.numeric(res$estimate), pvalue = res$p.value, stat = as.numeric(res$statistic), test = names(res$statistic))
-    return(list(res, out))
+    if (method %in% c('pearson','spearman','kendall')){
+        res = cor.test(abs, rel, method=method)
+        out = data.frame(method = method, coef = as.numeric(res$estimate), pvalue = res$p.value, stat = as.numeric(res$statistic), test = names(res$statistic))
+    }else if (method == 'rho'){
+        df  = data.frame(abs=abs, rel=rel)
+        pro = propr(df, metric=method, ivar=NA, p=0)
+        out = data.frame(method = method, coef = pro$matrix[1,2], pvalue=NA, stat=NA, test=NA)
+    }
+    return(out)
 }
 
 # parse file
@@ -57,11 +64,11 @@ abs = abs[lower.tri(abs)]
 rel = rel[lower.tri(rel)]
 
 # calculate cor
-if (parser$method %in% c('pearson', 'spearman', 'kendall')){
+if (parser$method %in% c('pearson', 'spearman', 'kendall', 'rho')){
     message("calculating pairwise [", parser$method, "] correlation as evaluation method")
-    res = compute.cor(abs, rel, parser$method)
+    out = compute.cor(abs, rel, parser$method)
 }else{
     stop("method not supported")
 }
-write.table(res[[2]], file=parser$out, quote=F, sep = ',', row.names=F)
+write.table(out, file=parser$out, quote=F, sep = ',', row.names=F)
 message('finished')

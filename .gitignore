@@ -5,3 +5,6 @@
 /data/
 /jupyter/
 /work*/
+/*.png
+/*.csv
+/*.pdf

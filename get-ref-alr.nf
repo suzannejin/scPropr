@@ -27,6 +27,7 @@ ch_count
 procrustes_filter = 0  // % of zeros in a gene. Procrustes analysis will only be performed for genes below the threshold
 
 // import module
+include { GET_RELATIVE           } from "${launchDir}/modules/get-relative.nf"       
 include { COMPUTE_LRA            } from "${launchDir}/modules/compute-lra.nf"
 include { PROCRUSTES_ANALYSIS    } from "${launchDir}/modules/procrustes-analysis.nf"
 include { REPLACE_ZERO           } from "${launchDir}/modules/replace-zero.nf"
@@ -34,6 +35,10 @@ include { SELECT_GENE_PROCRUSTES } from "${launchDir}/modules/select-gene-procru
 
 
 workflow {
+
+    /* get relative data */
+    GET_RELATIVE(ch_input)
+    ch_input = GET_RELATIVE.out
 
     /* replace zero */
     REPLACE_ZERO(
