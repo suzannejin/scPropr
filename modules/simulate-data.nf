@@ -3,8 +3,8 @@
 process SIMULATE_DATA {
 
     container 'suzannejin/scpropr:simulate'
-    tag "${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}"
-    storeDir "${params.outdir}/${dataset}/simulated/${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}"
+    tag "${dataset}_${exp_sim}+simulate+s${slope}+n${ndata}+c${cell_factor}"
+    storeDir "${params.outdir}/${dataset}/simulated/${dataset}_${exp_sim}+simulate+s${slope}+n${ndata}+c${cell_factor}"
 
     input:
     tuple val(dataset),
@@ -19,9 +19,9 @@ process SIMULATE_DATA {
     each cell_factor
 
     output:
-    tuple file("${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}_full_absolute.csv.gz"),
-          file("${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}_full_features.csv"),
-          file("${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}_full_barcodes.csv"),
+    tuple file("${dataset}_${exp_sim}+simulate+s${slope}+n${ndata}+c${cell_factor}_full_absolute.csv.gz"),
+          file("${dataset}_${exp_sim}+simulate+s${slope}+n${ndata}+c${cell_factor}_full_features.csv"),
+          file("${dataset}_${exp_sim}+simulate+s${slope}+n${ndata}+c${cell_factor}_full_barcodes.csv"),
           file(".command.trace"),
           file(".command.sh")
 
@@ -29,24 +29,24 @@ process SIMULATE_DATA {
     """
     simulate-data.R \
         $model \
-        ${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}_full_absolute.csv.gz \
+        ${dataset}_${exp_sim}+simulate+s${slope}+n${ndata}+c${cell_factor}_full_absolute.csv.gz \
         --slope $slope \
         --ndata $ndata \
         --cell_factor $cell_factor 
-    mv $features ${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}_full_features.csv
-    mv $barcodes ${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}_full_barcodes.csv
+    mv $features ${dataset}_${exp_sim}+simulate+s${slope}+n${ndata}+c${cell_factor}_full_features.csv
+    mv $barcodes ${dataset}_${exp_sim}+simulate+s${slope}+n${ndata}+c${cell_factor}_full_barcodes.csv
     """
 
     stub:
     """
     echo simulate-data.R \
         $model \
-        ${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}_full_absolute.csv.gz \
+        ${dataset}_${exp_sim}+simulate+s${slope}+n${ndata}+c${cell_factor}_full_absolute.csv.gz \
         --slope $slope \
         --ndata $ndata \
         --cell_factor $cell_factor 
-    touch ${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}_full_absolute.csv.gz
-    mv $features ${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}_full_features.csv
-    mv $barcodes ${dataset}_simulate+s${slope}+n${ndata}+c${cell_factor}_full_barcodes.csv
+    touch ${dataset}_${exp_sim}+simulate+s${slope}+n${ndata}+c${cell_factor}_full_absolute.csv.gz
+    mv $features ${dataset}_${exp_sim}+simulate+s${slope}+n${ndata}+c${cell_factor}_full_features.csv
+    mv $barcodes ${dataset}_${exp_sim}+simulate+s${slope}+n${ndata}+c${cell_factor}_full_barcodes.csv
     """
 }

@@ -32,7 +32,7 @@ FINDALR <- function(data, data.lra, j, gene, weight = FALSE) {
   tot.var <- sum(data.lra$sv^2)
   
   ### compute Procrustes correlation
-  message("computing the procrates correlation for gene ", j)
+  message("computing the procrates correlation for gene ", j, " - ", gene)
   dim <- min(nrow(data), ncol(data)) - 1
   # ALR transformation
   alr <- ALR(data, denom=j, weight=weight)
@@ -75,8 +75,8 @@ ngene = which(features == parser$gene)
 data.lra = readRDS(parser$lra)
 
 # compute stats -------------------------------------------------------------------------
-stat = FINDALR(data, data.lra, ngene, gene, weight=F)
-part = data[,ngene]
+stat = FINDALR(data, data.lra, ngene, parser$gene, weight=F)
+part = data[,..ngene]
 dropout = mean(part == 0)
 stat$dropout = dropout
 stat = data.frame(stat)

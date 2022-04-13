@@ -38,7 +38,7 @@ compute.cor <- function(abs, rel, method){
     }else if (method == 'rho'){
         df  = data.frame(abs=abs, rel=rel)
         pro = propr(df, metric=method, ivar=NA, p=0)
-        out = data.frame(method = method, coef = pro$matrix[1,2], pvalue=NA, stat=NA, test=NA)
+        out = data.frame(method = method, coef = pro@matrix[1,2], pvalue=NA, stat=NA, test=NA)
     }
     return(out)
 }

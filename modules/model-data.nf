@@ -5,7 +5,7 @@ process MODEL_DATA {
 
     label 'process_high_long'
     container 'suzannejin/scpropr:simulate'
-    tag "${dataset}"
+    tag "${dataset}-${exp_sim}"
     storeDir "${params.outdir}/${dataset}/model/${exp_sim}"
     // publishDir "${params.outdir}/${dataset}/model", mode: params.publish_dir_mode
     // TODO be able to model based on different homogeneous populations

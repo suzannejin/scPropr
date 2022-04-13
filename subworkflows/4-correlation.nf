@@ -5,7 +5,7 @@
 nextflow.enable.dsl = 2
 
 include { GET_CORRELATION } from "${launchDir}/modules/get-correlation.nf"
-include { PLOT_ABS_VS_REL_COR; PLOT_LOG2ABS_VS_REL_COR } from "${launchDir}/modules/plot-abs-vs-rel-cor.nf"
+include { PLOT_ABS_VS_REL_COR; PLOT_LOG2ABS_VS_REL_COR; PLOT_LOG2ABS_VS_REL_COR_COLORED; PLOT_LOG2ABS_VS_REL_COR_COLORED_INDIV } from "${launchDir}/modules/plot-abs-vs-rel-cor.nf"
 include { EVALUATE_LOG2ABS_VS_REL_COR } from "${launchDir}/modules/evaluate-log2abs-vs-rel-cor.nf"
 
 
@@ -13,8 +13,10 @@ workflow CORRELATION {
 
     take:
     ch_input  // dataset, exp_sim, full, abs_rel, replace_zero, transf_data, refgene, processed_count, features, barcodes
+    ch_ori    // dataset, experimental, full, absolute, count, features, barcodes
     method_cor
     method_eval
+    scatter_colorby
 
     main:
 
@@ -82,6 +84,28 @@ workflow CORRELATION {
         .map{ it -> [ it[0..3], it[7..8], it[4], it[5], it[9], it[6] ].flatten() }
         .set{ ch2evaluate_log2abs_vs_rel }   // dataset, exp_sim, full, method_replace_zero, method_transf_zero, refgene, method_cor, log2abs matrix, rel matrix, features
     EVALUATE_LOG2ABS_VS_REL_COR(ch2evaluate_log2abs_vs_rel, method_eval)
+
+    /* compute scatterplots colored by dropout */
+    ch_ori
+        .filter{ it[3] == 'absolute' }
+        .map{ it -> [
+            it[0],
+            it[1],
+            it[2],
+            it[4]
+        ] }
+        .set{ ch_ori }
+    ch2plot_log2abs_vs_rel
+        .combine( ch_ori, by:[0,1,2] )
+        .set{ ch2plot_log2abs_vs_rel_colored }
+    PLOT_LOG2ABS_VS_REL_COR_COLORED(
+        ch2plot_log2abs_vs_rel_colored,
+        scatter_colorby
+    )
+    // ch2evaluate_log2abs_vs_rel
+    //     .combine( ch_ori, by:[0,1,2] )
+    //     .set{ ch2plot_log2abs_vs_rel_colored_indiv }
+    // PLOT_LOG2ABS_VS_REL_COR_COLORED_INDIV(ch2plot_log2abs_vs_rel_colored_indiv)
 
 
     emit:

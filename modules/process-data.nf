@@ -35,7 +35,11 @@ process PROCESS_DATA {
           file(".command.sh")
 
     when:
-    (method_transform_data != 'alr' && refgene == 'NA') || (method_transform_data == 'alr' && refgene != 'NA')
+    if (full == 'full'){
+        (method_transform_data != 'alr' && refgene == 'NA') || (method_transform_data == 'alr' && refgene != 'NA')
+    } else if (full == 'nozero'){
+        (method_transform_data != 'alr' && refgene == 'NA') || (method_transform_data == 'alr' && refgene in params.refgenes_nozero)
+    }
 
     script:
     def ref_gene_cml = refgene == 'NA' ? " " : "--refgene $refgene" 
@@ -48,6 +52,7 @@ process PROCESS_DATA {
         --method_zero $method_replace_zero \
         --method_transf $method_transform_data \
         $ref_gene_cml 
+    sleep 30
     """
 
     stub:

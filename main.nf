@@ -48,7 +48,7 @@ workflow {
 
 
     /* subworkflow: model and simulate data with scDesign2 */
-    if (params.do_simulation_byslope || params.do_simulation_bydepth || params.do_simulation_bystep){
+    if ( params.do_simulation || params.do_simulation_byslope || params.do_simulation_bydepth || params.do_simulation_bystep){
 
         ch_input
             .filter{ it[1] in params.do_simulation_type }
@@ -105,10 +105,13 @@ workflow {
 
     /* subworkflow: plot basic figures for experimental and simulated data */
     // TODO also compute data exploration plots for transformed data
-    DATA_EXPLORATION( ch_input )  
+    if (params.do_plot_data_exploration){
+        DATA_EXPLORATION( ch_input )  
+    }
 
 
     /* subworkflow: data processing */
+    ch_ori = ch_input
     DATA_PROCESSING(
         ch_input,
         params.method_replace_zero.tokenize(','),
@@ -119,8 +122,10 @@ workflow {
     /* subworkflow: compute correlation */
     CORRELATION(
         DATA_PROCESSING.out,
+        ch_ori,
         params.method_correlation.tokenize(','),
-        params.method_evaluation.tokenize(',')
+        params.method_evaluation.tokenize(','),
+        params.scatter_colorby
     )
 
     // TODO plot scatter vs index, colored by reference gene

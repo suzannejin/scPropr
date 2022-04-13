@@ -16,10 +16,10 @@ parser$add_argument('--refgene', type='character', help="Reference gene index. T
 parser = parser$parse_args()
 
 # check arguments
-if (!is.null(parser$method_zero) && !( parser$method_zero %in% c("zcompositions", "one", "min") )){
+if (!is.null(parser$method_zero) && !( parser$method_zero %in% c("zcompositions", "one", "min", "pseudocount") )){
     stop("wrong zero replacement method - ", method_zero)
 }
-if (!is.null(parser$method_transf) && !( parser$method_transf %in% c("log2", "clr", "alr", "tmm", "scran") )){
+if (!is.null(parser$method_transf) && !( parser$method_transf %in% c("log2", "clr", "alr", "tmm", "scran","tmm2") )){
     stop("wrong transformation or normalization method - ", method_transf)
 }
 
@@ -27,7 +27,7 @@ if (!is.null(parser$method_transf) && !( parser$method_transf %in% c("log2", "cl
 # read and process data --------------------------------------------------------
 
 # read input data
-count    = fread(parser$input, header=F)
+count    = as.matrix( fread(parser$input, header=F) )
 features = fread(parser$features, header=F)$V1
 if ( length(features) != ncol(count) ) stop("length(features) != ncol(count)")
 if (!is.null(parser$refgene)){
@@ -43,10 +43,10 @@ class(count)
 
 # functions -------------------------------------------------------------------
 
-replace_zero <- function(count, method=c("zcompositions", "one", "min")){
+replace_zero <- function(count, method=c("zcompositions", "one", "min", "pseudocount"), pseudo.count=1){
 
     method = match.arg(method)
-    if (!any(count==0, na.rm=T)) return(as.matrix(count))
+    if (!any(count==0, na.rm=T)) return(count)
     message("replacing zeros with method ", method)
 
     # replace zero
@@ -66,9 +66,11 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min")){
         count[count == 0] = 1
 
     }else if (method == "min"){
-        count = as.matrix(count) 
+        count = count
         zeros = count == 0
         count[zeros] = min(count[!zeros])
+    }else if (method == "pseudocount"){
+        count = count + pseudo.count
     }
 
     # TODO add scImpute, etc zero handling methods for single cell
@@ -79,7 +81,7 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min")){
     return(count)
 }
 
-normalize_data <- function(count, method=c("tmm", "scran")){
+normalize_data <- function(count, method=c("tmm", "scran","tmm2")){
     method = match.arg(method)
     message("normalizing data with method ", method)
     if (method == "tmm"){
@@ -95,8 +97,16 @@ normalize_data <- function(count, method=c("tmm", "scran")){
         y = DGEList(counts=count)   
         y = calcNormFactors(y, method="TMM")
         size.factor = y$samples$norm.factors
-        effective.libsize = y$samples$lib.size * size.factor
-        count = t(count) / effective.libsize   # normalized count per million
+        effective.libsize = y$samples$lib.size * size.factor   
+        count = t(count) / effective.libsize 
+    }else if (method == "tmm2"){
+        require(edgeR)
+        count = t(count) # it requires row=genes, col=cells
+        y = DGEList(counts=count)   
+        y = calcNormFactors(y, method="TMM")
+        size.factor = y$samples$norm.factors
+        effective.libsize = y$samples$lib.size * size.factor   
+        count = t(count) 
     }else if (method == "scran"){
         require(scran)
         require(scuttle)
@@ -140,13 +150,18 @@ if (parser$method_transf %in% c('log2', 'clr', 'alr')){
         size.factor = count[,nrefgene]
         count = propr:::proprALR(count, nrefgene)
     }
-
-}else if (parser$method_transf %in% c("tmm", "scran")){
+}else if (parser$method_transf %in% c('tmm','scran')){
     norm  = normalize_data(count, parser$method_transf)
     count = norm$count
-    if(!is.null(parser$method_zero)) count = replace_zero(count, parser$method_zero)
+    if(!is.null(parser$method_zero)) count = replace_zero(count, parser$method_zero, pseudo.count=1)
     count = log2(count)
     size.factor = norm$size.factor
+}else if(parser$method_transf == 'tmm2'){  ## corrected version,  transcript per milion
+    norm  = normalize_data(count, 'tmm2')
+    size.factor = norm$size.factor
+    if(!is.null(parser$method_zero)) count = replace_zero(count, parser$method_zero, pseudo.count=1)
+    count = count / size.factor * 1e6
+    count = log2(count)
 }
 
 # save output
