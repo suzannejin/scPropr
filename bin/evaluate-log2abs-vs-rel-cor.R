@@ -6,12 +6,15 @@ library(propr)
 
 # parse arguments
 parser = ArgumentParser(description='Calculate a metric evaluating the coefficients on absolute vs relative data.')
+parser$add_argument('--ori', type='character', help="Original (raw) absolute count data")
 parser$add_argument('--abs', type='character', help="Coefficients on log2 absolute data")
 parser$add_argument('--rel', type='character', help="Coefficients on transformed relative data")
 parser$add_argument('--features', type='character', help="List of gene names")
 parser$add_argument('--out', type='character', help="Output filename containing the metric")
+parser$add_argument('--filter', type='double', default=0.2, help="Keep only the pairs whose dropout <= filtering threshold. Default = 0.2")
 parser$add_argument('--method', type='character', help="Metric method. Choices: [pearson, spearman, kendall, rho]")
 parser = parser$parse_args()
+
 
 parse_file <- function(filename){
     l = c()
@@ -44,6 +47,7 @@ compute.cor <- function(abs, rel, method){
 }
 
 # parse file
+message('parsing data')
 abs_l    = parse_file(parser$abs)
 rel_l    = parse_file(parser$rel)
 features = fread(parser$features, header=F)$V1
@@ -53,15 +57,27 @@ if(is.na(refgene) || refgene == "NA"){
 } else { 
     nrefgene = which( toupper(features) == toupper(refgene) )
     if (length(nrefgene) == 0) stop("wrong reference gene")
+    features = features[-nrefgene]
 }
 
 # read data
 message("reading input data")
+ori = get_mat(parser$ori, nrefgene)
 abs = get_mat(abs_l['file'], nrefgene)
 rel = get_mat(rel_l['file'], NA)
-if ( (nrow(abs) != nrow(rel)) || (ncol(abs) != ncol(rel)) ) { stop("abs and rel matrices have different dimensiones") }
+if ( (nrow(abs) != nrow(rel)) || (ncol(abs) != ncol(rel)) ) stop("abs and rel matrices have different dimensiones") 
+if ( ncol(abs) != ncol(ori) ) stop("abs and ori matrices have different number of genes") 
+if ( ncol(abs) != length(features) ) stop("ncol(abs) != length(features)")
+
+# get dropout
+message('filtering genes that have dropout > ', parser$filter)
+dropout = colMeans(ori == 0)
+pos = which(dropout <= parser$filter)
+abs = abs[pos, pos]
+rel = rel[pos, pos]
 abs = abs[lower.tri(abs)]
 rel = rel[lower.tri(rel)]
+features = features[pos]
 
 # calculate cor
 if (parser$method %in% c('pearson', 'spearman', 'kendall', 'rho')){
