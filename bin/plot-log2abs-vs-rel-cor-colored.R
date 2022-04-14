@@ -13,8 +13,10 @@ parser$add_argument('--abs', type='character', nargs='+', help="Coefficients com
 parser$add_argument('--rel', type='character', nargs='+', help="Coefficients computed on relative data")
 parser$add_argument('--features', type='character', help="List of gene names")
 parser$add_argument('--color', type='character', default='dropout', help="Color by dropout or var. Default=dropout")
-parser$add_argument('--output', type='character', help="Output figure filename")
+parser$add_argument('--filter', type='double', default=0.2, help="Keep only the pairs whose dropout <= filtering threshold. Default = 0.2")
+parser$add_argument('--outdir', type='character', help="Output directory")
 parser$add_argument('--npoint', type='integer', default=1e4, help="Number of points to plot")
+parser$add_argument('--seed', type='integer', default=0, help="Random seed. Default=0")
 parser = parser$parse_args()
 
 # functions
@@ -60,25 +62,28 @@ features      = fread(parser$features, header=F)$V1
 ori           = fread(parser$ori)
 tmp           = ori / rowSums(ori) * mean(rowSums(ori))
 dropout       = colMeans(ori == 0)
-var_genes_abs = apply(ori, 2, var)
-var_genes_rel = apply(tmp, 2, var)
+# var_genes_abs = apply(ori, 2, var)
+# var_genes_rel = apply(tmp, 2, var)
+rm(ori)
+rm(tmp)
 
 # organize data
 message("organizing data")
 df = data.frame()
+df_filtered = data.frame()
 for (i in 1:length(parser$rel)){
     if ( !is.na(rel_l$ref[i]) ){ 
         nrefgene  = which(features == rel_l$ref[i]) 
         features2 = features[-nrefgene]
         dropout2  = dropout[-nrefgene]
-        var_genes_abs2 = var_genes_abs[-nrefgene]
-        var_genes_rel2 = var_genes_rel[-nrefgene]
+        # var_genes_abs2 = var_genes_abs[-nrefgene]
+        # var_genes_rel2 = var_genes_rel[-nrefgene]
     } else { 
         nrefgene  = NA 
         features2 = features
         dropout2  = dropout
-        var_genes_abs2 = var_genes_abs
-        var_genes_rel2 = var_genes_rel
+        # var_genes_abs2 = var_genes_abs
+        # var_genes_rel2 = var_genes_rel
     }
     xpos = which( abs_l$name == paste0('log2 - ', rel_l$cor[i]) )
     abs    = get_mat(abs_l$file[xpos], nrefgene)
@@ -94,31 +99,55 @@ for (i in 1:length(parser$rel)){
         abs       = abs[ind],
         rel       = rel[ind],
         dropout_i = dropout2[ind[,1]],
-        dropout_j = dropout2[ind[,2]],
-        var_abs_i = var_genes_abs2[ind[,1]],
-        var_abs_j = var_genes_abs2[ind[,2]],
-        var_rel_i = var_genes_rel2[ind[,1]],
-        var_rel_j = var_genes_rel2[ind[,2]]
+        dropout_j = dropout2[ind[,2]]
+        # var_abs_i = var_genes_abs2[ind[,1]],
+        # var_abs_j = var_genes_abs2[ind[,2]],
+        # var_rel_i = var_genes_rel2[ind[,1]],
+        # var_rel_j = var_genes_rel2[ind[,2]]
     )
-    set.seed(0); pos = sample(c(1:nrow(df2)), size=parser$npoint)
+    
+    pos = which( df2[,'dropout_i'] <= parser$filter & df2[,'dropout_j'] <= parser$filter )
+    if (length(pos) == 0) stop('please make the filtering less stringent')
+    df2_filtered = df2[pos,]
+    set.seed(parser$seed); pos = sample(c(1:nrow(df2)), size=parser$npoint)
     df2 = df2[pos,]
     df  = rbind(df, df2)
+    set.seed(parser$seed); pos = sample(c(1:nrow(df2_filtered)), size=parser$npoint)
+    df2_filtered = df2_filtered[pos,]
+    df_filtered  = rbind(df_filtered, df2_filtered)
 }
 df[,'dropout'] = rowMeans( data.frame(df[,'dropout_i'], df[,'dropout_j']) )
-df[,'var_abs'] = rowMeans( data.frame(df[,'var_abs_i'], df[,'var_abs_j']) )
-df[,'var_rel'] = rowMeans( data.frame(df[,'var_rel_i'], df[,'var_rel_j']) )
+df_filtered[,'dropout'] = rowMeans( data.frame(df_filtered[,'dropout_i'], df_filtered[,'dropout_j']) )
+# df[,'var_abs'] = rowMeans( data.frame(df[,'var_abs_i'], df[,'var_abs_j']) )
+# df[,'var_rel'] = rowMeans( data.frame(df[,'var_rel_i'], df[,'var_rel_j']) )
 dim(df)
 head(df)
+dim(df_filtered)
+head(df_filtered)
+
+# release memory
+rm(abs_l)
+rm(rel_l)
+rm(abs)
+rm(rel)
+rm(features)
+rm(dropout)
+# rm(var_genes_abs)
+# rm(var_genes_rel)
 
 # set figure size
-ncol   = length( unique(df$transf) )
-nrow   = length( unique(df$cor) )
-width  = 3 * ncol
-height = 3 * nrow
+ncol    = length( unique(df$transf) )
+nrow    = length( unique(df$cor) )
+width   = 3 * ncol
+height  = 3 * nrow
+ncol2   = length( unique(df_filtered$transf) )
+nrow2   = length( unique(df_filtered$cor) )
+width2  = 3 * ncol2
+height2 = 3 * nrow2
 
 # plot abs vs relative
 message('plotting figure')
-g = ggplot(df, aes_string(x='abs', y='rel', color=parser$color)) +
+g1 = ggplot(df, aes_string(x='abs', y='rel', color=parser$color)) +
     facet_wrap(~cor + transf, scales="free", nrow=nrow, ncol=ncol) +
     geom_point(alpha=.1, size=.5) + 
     geom_abline(intercept = 0, slope = 1, linetype = 2, color="gray46") +
@@ -126,10 +155,54 @@ g = ggplot(df, aes_string(x='abs', y='rel', color=parser$color)) +
     xlab("On absolute data") +
     ylab("On relative data") +
     theme(strip.text = element_text(size = 12))
+g2 = ggplot(df, aes_string(x='abs', y='rel')) +
+    facet_wrap(~cor + transf, scales="free", nrow=nrow, ncol=ncol) +
+    geom_point(alpha=.1, size=.5) + 
+    geom_abline(intercept = 0, slope = 1, linetype = 2, color="gray46") +
+    xlab("On absolute data") +
+    ylab("On relative data") +
+    theme(strip.text = element_text(size = 12))
+g3 = ggplot(df_filtered, aes_string(x='abs', y='rel', color=parser$color)) +
+    facet_wrap(~cor + transf, scales="free", nrow=nrow2, ncol=ncol2) +
+    geom_point(alpha=.1, size=.5) + 
+    geom_abline(intercept = 0, slope = 1, linetype = 2, color="gray46") +
+    scale_colour_viridis_c() +
+    xlab("On absolute data") +
+    ylab("On relative data") +
+    theme(strip.text = element_text(size = 12))
+g4 = ggplot(df_filtered, aes_string(x='abs', y='rel')) +
+    facet_wrap(~cor + transf, scales="free", nrow=nrow2, ncol=ncol2) +
+    geom_point(alpha=.1, size=.5) + 
+    geom_abline(intercept = 0, slope = 1, linetype = 2, color="gray46") +
+    xlab("On absolute data") +
+    ylab("On relative data") +
+    theme(strip.text = element_text(size = 12))
+message('saving colored figure')
 ggsave(
-    parser$output, 
-    plot   = g, 
+    paste0(parser$outdir, '/log2abs-vs-rel-cor-colored.png'), 
+    plot   = g1, 
     width  = width,
     height = height
+)
+message('saving black figure')
+ggsave(
+    paste0(parser$outdir, '/log2abs-vs-rel-cor-black.png'), 
+    plot   = g2, 
+    width  = width,
+    height = height
+)
+message('saving colored and filtered figure')
+ggsave(
+    paste0(parser$outdir, '/log2abs-vs-rel-cor-colored-filtered.png'), 
+    plot   = g3, 
+    width  = width2,
+    height = height2
+)
+message('saving black and filtered figure')
+ggsave(
+    paste0(parser$outdir, '/log2abs-vs-rel-cor-black-filtered.png'), 
+    plot   = g4, 
+    width  = width2,
+    height = height2
 )
 message('finished')

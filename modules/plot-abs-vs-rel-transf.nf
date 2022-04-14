@@ -22,6 +22,9 @@ process PLOT_ABS_VS_REL_TRANSF {
     file ".command.trace"
     file ".command.sh"
 
+    when:
+    params.do_plot_abs_vs_rel_transf
+
     script:
     def abs2 = abs.join(' ')
     def rel2 = rel.join(' ')
@@ -73,6 +76,9 @@ process PLOT_LOG2ABS_VS_REL_TRANSF {
     file "${dataset}_${exp_sim}_${full}_${method_replace_zero}.png"
     file ".command.trace"
     file ".command.sh"
+
+    when:
+    params.do_plot_log2abs_vs_rel_transf
 
     script:
     def abs2 = abs.join(' ')

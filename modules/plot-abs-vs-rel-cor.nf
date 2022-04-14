@@ -22,6 +22,9 @@ process PLOT_ABS_VS_REL_COR {
     file "${dataset}_${exp_sim}_${full}_${method_replace_zero}.png"
     file ".command.trace"
     file ".command.sh"
+    
+    when:
+    params.do_plot_abs_vs_rel_cor
 
     script:
     def abs2 = abs.join(' ')
@@ -80,6 +83,9 @@ process PLOT_LOG2ABS_VS_REL_COR {
     file ".command.trace"
     file ".command.sh"
 
+    when:
+    params.do_plot_log2abs_vs_rel_cor
+
     script:
     def abs2 = abs.join(' ')
     def rel2 = rel.join(' ')
@@ -88,7 +94,7 @@ process PLOT_LOG2ABS_VS_REL_COR {
         --abs $abs2 \
         --rel $rel2 \
         --features $features \
-        --output ${dataset}_${exp_sim}_${full}_${method_replace_zero}.png
+        --output ${dataset}_${exp_sim}_${full}_${method_replace_zero}.png 
     """
 
     stub:
@@ -109,8 +115,8 @@ process PLOT_LOG2ABS_VS_REL_COR {
 process PLOT_LOG2ABS_VS_REL_COR_COLORED {
     label 'process_shigh'
     container 'suzannejin/scpropr:plot'
-    tag "${dataset}-${exp_sim}-${full}-${method_replace_zero}-${color}"
-    publishDir "${params.outdir}/${dataset}/plot/log2abs-vs-rel-cor-colored/${dataset}_${exp_sim}_${full}_${method_replace_zero}_${color}", mode: params.publish_dir_mode 
+    tag "${dataset}-${exp_sim}-${full}-${method_replace_zero}-${color}-seed${seed}"
+    publishDir "${params.outdir}/${dataset}/plot/log2abs-vs-rel-cor-colored/${dataset}_${exp_sim}_${full}_${method_replace_zero}_${color}_seed${seed}", mode: params.publish_dir_mode 
 
     input:
     tuple val(dataset), 
@@ -127,13 +133,18 @@ process PLOT_LOG2ABS_VS_REL_COR_COLORED {
     each color
 
     output:
-    file "${dataset}_${exp_sim}_${full}_${method_replace_zero}_${color}.png"
+    file "*.png"
     file ".command.trace"
     file ".command.sh"
 
+    when:
+    params.do_plot_log2abs_vs_rel_cor_colored
+
     script:
+    def filter = 0.2
     def abs2 = abs.join(' ')
     def rel2 = rel.join(' ')
+    def seed = params.random_seed
     """
     plot-log2abs-vs-rel-cor-colored.R \
         --ori $ori \
@@ -141,12 +152,16 @@ process PLOT_LOG2ABS_VS_REL_COR_COLORED {
         --rel $rel2 \
         --features $features \
         --color $color \
-        --output ${dataset}_${exp_sim}_${full}_${method_replace_zero}_${color}.png
+        --filter $filter \
+        --seed $seed \
+        --outdir .
     """
 
     stub:
+    def filter = 0.2
     def abs2 = abs.join(' ')
     def rel2 = rel.join(' ')
+    def seed = params.random_seed
     """
     echo plot-log2abs-vs-rel-cor-colored.R \
         --ori $ori \
@@ -154,15 +169,18 @@ process PLOT_LOG2ABS_VS_REL_COR_COLORED {
         --rel $rel2 \
         --features $features \
         --color $color \
-        --output ${dataset}_${exp_sim}_${full}_${method_replace_zero}_${color}.png
-    touch ${dataset}_${exp_sim}_${full}_${method_replace_zero}_${color}.png
+        --filter $filter \
+        --seed $seed \
+        --outdir .
+    touch log2abs-vs-rel-cor-colored.png log2abs-vs-rel-cor-black.png log2abs-vs-rel-cor-colored-filtered.png log2abs-vs-rel-cor-black-filtered.png
     """
 }
 
 process PLOT_LOG2ABS_VS_REL_COR_COLORED_INDIV {
+    label 'process_high'
     container 'suzannejin/scpropr:plot'
-    tag "${dataset}-${exp_sim}-${full}-${method_replace_zero}-${method_transform_data}-${refgene}-${method_cor}-${method_eval}"
-    storeDir "${params.outdir}/${dataset}/plot/log2abs-vs-rel-cor-colored-indiv/${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}"
+    tag "${dataset}-${exp_sim}-${full}-${method_replace_zero}-${method_transform_data}-${refgene}-${method_cor}-seed${seed}"
+    storeDir "${params.outdir}/${dataset}/plot/log2abs-vs-rel-cor-colored-indiv/${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}_seed${seed}"
 
     input:
     tuple val(dataset), 
@@ -178,12 +196,17 @@ process PLOT_LOG2ABS_VS_REL_COR_COLORED_INDIV {
           file(ori)
 
     output:
-    file "${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}.png"
+    file "log2abs-vs-rel-cor-colored*.png"
     file ".command.trace"
     file ".command.sh"
 
+    when:
+    params.do_plot_log2abs_vs_rel_cor_colored_indiv
+
     script:
     def refgene1 = refgene == 'NA' ? '' : "--refgene $refgene"
+    def filter = '--filter 0.2'
+    def seed = params.random_seed
     """
     plot-log2abs-vs-rel-cor-colored-indiv.R \
         --ori $ori \
@@ -191,11 +214,16 @@ process PLOT_LOG2ABS_VS_REL_COR_COLORED_INDIV {
         --rel $rel \
         --features $features \
         $refgene1 \
-        --out ${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}.png 
+        $filter \
+        --seed $seed \
+        --outdir .
     sleep 30
     """
 
     stub:
+    def refgene1 = refgene == 'NA' ? '' : "--refgene $refgene"
+    def filter = '--filter 0.2'
+    def seed = params.random_seed
     """
     plot-log2abs-vs-rel-cor-colored-indiv.R \
         --ori $ori \
@@ -203,7 +231,9 @@ process PLOT_LOG2ABS_VS_REL_COR_COLORED_INDIV {
         --rel $rel \
         --features $features \
         $refgene1 \
-        --out ${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}.png 
+        $filter \
+        --seed $seed \
+        --outdir .
     touch ${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}.png
     """
 }

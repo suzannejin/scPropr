@@ -75,7 +75,7 @@ workflow CORRELATION {
             it[9][0]   
         ] }
         .set{ ch2plot_log2abs_vs_rel }  // dataset, exp_sim, full, method_replace_zero, method_transf_data, refgene, method_cor, log2abs matrix, rel matrix, features
-    PLOT_LOG2ABS_VS_REL_COR(ch2plot_log2abs_vs_rel)
+    // PLOT_LOG2ABS_VS_REL_COR(ch2plot_log2abs_vs_rel)
 
 
     /* TODO compute metric */
@@ -102,10 +102,10 @@ workflow CORRELATION {
         ch2plot_log2abs_vs_rel_colored,
         scatter_colorby
     )
-    // ch2evaluate_log2abs_vs_rel
-    //     .combine( ch_ori, by:[0,1,2] )
-    //     .set{ ch2plot_log2abs_vs_rel_colored_indiv }
-    // PLOT_LOG2ABS_VS_REL_COR_COLORED_INDIV(ch2plot_log2abs_vs_rel_colored_indiv)
+    ch2evaluate_log2abs_vs_rel
+        .combine( ch_ori, by:[0,1,2] )
+        .set{ ch2plot_log2abs_vs_rel_colored_indiv }
+    PLOT_LOG2ABS_VS_REL_COR_COLORED_INDIV(ch2plot_log2abs_vs_rel_colored_indiv)
 
 
     emit:

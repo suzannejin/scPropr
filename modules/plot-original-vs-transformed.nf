@@ -27,6 +27,9 @@ process PLOT_ORIGINAL_VS_TRANSFORMED {
     file ".command.trace"
     file ".command.sh"
 
+    when:
+    params.do_plot_original_vs_transf
+
     script:
     def methods = method_transform_data.join(' ')
     def refgenes = refgene.join(' ')
@@ -90,6 +93,9 @@ process PLOT_LOG_VS_TRANSFORMED {
     path "${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logxy.png"
     path ".command.trace"
     path ".command.sh"
+
+    when:
+    params.do_plot_log_vs_transf
 
     script:
     def methods = method_transform_data.join(' ')
