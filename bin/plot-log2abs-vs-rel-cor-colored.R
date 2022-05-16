@@ -88,7 +88,7 @@ for (i in 1:length(parser$rel)){
     xpos = which( abs_l$name == paste0('log2 - ', rel_l$cor[i]) )
     abs    = get_mat(abs_l$file[xpos], nrefgene)
     rel    = get_mat(rel_l$file[i], NA)
-    if ( (nrow(abs) != nrow(rel)) || (ncol(abs) != ncol(rel)) ) stop("abs and rel matrices have different dimensiones") 
+    if ( (nrow(abs) != nrow(rel)) || (ncol(abs) != ncol(rel)) ) stop("abs and rel matrices have different dimensions") 
     if ( length(features2) != ncol(abs) ) stop("length(features) != ncol(abs)")
     ind  = which( upper.tri(abs, diag=F) , arr.ind = TRUE )
     df2  = data.frame(
@@ -112,7 +112,9 @@ for (i in 1:length(parser$rel)){
     set.seed(parser$seed); pos = sample(c(1:nrow(df2)), size=parser$npoint)
     df2 = df2[pos,]
     df  = rbind(df, df2)
-    set.seed(parser$seed); pos = sample(c(1:nrow(df2_filtered)), size=parser$npoint)
+    if ( nrow(df) < parser$npoint ){
+        set.seed(parser$seed); pos = sample(c(1:nrow(df2_filtered)), size=parser$npoint)
+    }
     df2_filtered = df2_filtered[pos,]
     df_filtered  = rbind(df_filtered, df2_filtered)
 }

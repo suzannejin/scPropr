@@ -36,9 +36,9 @@ process PROCESS_DATA {
 
     when:
     if (full == 'full'){
-        (method_transform_data != 'alr' && refgene == 'NA') || (method_transform_data == 'alr' && refgene != 'NA')
+        (refgene == 'NA' && method_transform_data !in ['alr', 'alr2']) || (refgene != 'NA' && method_transform_data in ['alr', 'alr2'])
     } else if (full == 'nozero'){
-        (method_transform_data != 'alr' && refgene == 'NA') || (method_transform_data == 'alr' && refgene in params.refgenes_nozero)
+        (refgene == 'NA' && method_transform_data !in ['alr', 'alr2']) || (refgene in params.refgenes_nozero && method_transform_data in ['alr', 'alr2'])
     }
 
     script:

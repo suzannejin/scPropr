@@ -7,7 +7,6 @@ nextflow.enable.dsl = 2
 
 include { MODEL_DATA } from "${launchDir}/modules/model-data.nf"
 include { SIMULATE_DATA } from "${launchDir}/modules/simulate-data.nf"
-include { SIMULATE_DATA_BYSLOPE; SIMULATE_DATA_BYSTEP; SIMULATE_DATA_BYDEPTH } from "${launchDir}/modules/simulate-data-old.nf"
 
 
 workflow DATA_SIMULATION {
@@ -16,12 +15,8 @@ workflow DATA_SIMULATION {
     ch_input  // dataset, experimental, full, absolute, count, features, barcodes
     slope
     ndata
-    size_factor
     cell_factor
     do_simulation
-    do_simulation_byslope
-    do_simulation_bydepth
-    do_simulation_bystep
 
     main:
     
@@ -42,30 +37,10 @@ workflow DATA_SIMULATION {
     
     /* simulate data */
     ch_simulated = Channel.empty()
-    if (do_simulation) {
-        SIMULATE_DATA(ch_model2simulation, slope, ndata, cell_factor)
-        ch_simulated
-            .mix( SIMULATE_DATA.out )
-            .set{ ch_simulated }
-    }
-    if (do_simulation_byslope){
-        SIMULATE_DATA_BYSLOPE(ch_model2simulation, slope, ndata, cell_factor)
-        ch_simulated
-            .mix( SIMULATE_DATA_BYSLOPE.out )
-            .set{ ch_simulated }
-    }
-    if (do_simulation_bydepth){ 
-        SIMULATE_DATA_BYDEPTH(ch_model2simulation, size_factor)
-        ch_simulated
-            .mix( SIMULATE_DATA_BYDEPTH.out )
-            .set{ ch_simulated }
-    }
-    if (do_simulation_bystep){
-        SIMULATE_DATA_BYSTEP(ch_model2simulation, slope, ndata, cell_factor)
-        ch_simulated
-            .mix( SIMULATE_DATA_BYSTEP.out )
-            .set{ ch_simulated }
-    }
+    SIMULATE_DATA(ch_model2simulation, slope, ndata, cell_factor)
+    ch_simulated
+        .mix( SIMULATE_DATA.out )
+        .set{ ch_simulated }
 
     // organize output channel
     ch_simulated
