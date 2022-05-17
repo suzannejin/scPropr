@@ -13,7 +13,6 @@ process PROCESS_DATA {
     storeDir "${params.outdir}/${dataset}/processed/${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}_${method_transform_data}_${refgene}"
     // publishDir "${params.outdir}/${dataset}/processed/${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}_${method_transform_data}_${refgene}", mode: params.publish_dir_mode
     
-
     input:
     tuple val(dataset), 
           val(exp_sim), 
@@ -35,10 +34,14 @@ process PROCESS_DATA {
           file(".command.sh")
 
     when:
-    if (full == 'full'){
-        (refgene == 'NA' && method_transform_data !in ['alr', 'alr2']) || (refgene != 'NA' && method_transform_data in ['alr', 'alr2'])
-    } else if (full == 'nozero'){
-        (refgene == 'NA' && method_transform_data !in ['alr', 'alr2']) || (refgene in params.refgenes_nozero && method_transform_data in ['alr', 'alr2'])
+    if (!params.do_transform_abs && abs_rel == 'absolute'){
+        (refgene == 'NA' && method_transform_data == 'log2')
+    }else{
+        if (full == 'full'){
+            (refgene == 'NA' && method_transform_data !in ['alr', 'alr2']) || (refgene != 'NA' && method_transform_data in ['alr', 'alr2'])
+        } else if (full == 'nozero'){
+            (refgene == 'NA' && method_transform_data !in ['alr', 'alr2']) || (refgene in params.refgenes_nozero && method_transform_data in ['alr', 'alr2'])
+        }
     }
 
     script:

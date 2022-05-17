@@ -24,7 +24,7 @@ process PLOT_ABS_VS_REL_COR {
     file ".command.sh"
     
     when:
-    params.do_plot_abs_vs_rel_cor
+    params.do_plot_abs_vs_rel_cor && params.do_transform_abs
 
     script:
     def abs2 = abs.join(' ')

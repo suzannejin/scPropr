@@ -23,7 +23,7 @@ process PLOT_ABS_VS_REL_TRANSF {
     file ".command.sh"
 
     when:
-    params.do_plot_abs_vs_rel_transf
+    params.do_plot_abs_vs_rel_transf && params.do_transform_abs
 
     script:
     def abs2 = abs.join(' ')
