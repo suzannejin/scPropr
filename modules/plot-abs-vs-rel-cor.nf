@@ -22,6 +22,7 @@ process PLOT_ABS_VS_REL_COR {
     file "${dataset}_${exp_sim}_${full}_${method_replace_zero}.png"
     file ".command.trace"
     file ".command.sh"
+    file ".command.log"
     
     when:
     params.do_plot_abs_vs_rel_cor && params.do_transform_abs
@@ -87,6 +88,7 @@ process PLOT_LOG2ABS_VS_REL_COR_COLORED {
     file "*.png"
     file ".command.trace"
     file ".command.sh"
+    file ".command.log"
 
     when:
     params.do_plot_log2abs_vs_rel_cor_colored
@@ -152,6 +154,7 @@ process PLOT_LOG2ABS_VS_REL_COR_COLORED_INDIV {
     file "log2abs-vs-rel-cor-colored*.png"
     file ".command.trace"
     file ".command.sh"
+    file ".command.log"
 
     when:
     params.do_plot_log2abs_vs_rel_cor_colored_indiv
@@ -216,6 +219,7 @@ process PLOT_LOG2ABS_VS_REL_COR_COLORED_INDIV_GM {
     file "log2abs-vs-rel-cor-colored*-gm.png"
     file ".command.trace"
     file ".command.sh"
+    file ".command.log"
 
     when:
     params.do_plot_log2abs_vs_rel_cor_colored_indiv_gm

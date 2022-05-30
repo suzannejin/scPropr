@@ -26,6 +26,7 @@ process PLOT_ORIGINAL_VS_TRANSFORMED {
     file "${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logxy.png"
     file ".command.trace"
     file ".command.sh"
+    file ".command.log"
 
     when:
     params.do_plot_original_vs_transf
@@ -93,6 +94,7 @@ process PLOT_LOG_VS_TRANSFORMED {
     path "${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logxy.png"
     path ".command.trace"
     path ".command.sh"
+    path ".command.log"
 
     when:
     params.do_plot_log_vs_transf

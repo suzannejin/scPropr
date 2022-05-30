@@ -25,6 +25,7 @@ process EVALUATE_LOG2ABS_VS_REL_COR {
     file "${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}_${method_eval}.csv"
     file ".command.trace"
     file ".command.sh"
+    file ".command.log"
 
     when:
     params.do_evaluate_log2abs_vs_rel_cor
@@ -80,6 +81,7 @@ process EVALUATE_LOG2ABS_VS_REL_COR_FILTER {
     file "${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}_${method_eval}.csv"
     file ".command.trace"
     file ".command.sh"
+    file ".command.log"
 
     when:
     params.do_evaluate_log2abs_vs_rel_cor_filter

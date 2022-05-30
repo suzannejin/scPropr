@@ -31,16 +31,19 @@ process PROCESS_DATA {
           file(features),
           file(barcodes),
           file(".command.trace"),
-          file(".command.sh")
+          file(".command.sh"),
+          file(".command.log")
 
     when:
     if (!params.do_transform_abs && abs_rel == 'absolute'){
         (refgene == 'NA' && method_transform_data == 'log2')
     }else{
-        if (full == 'full'){
-            (refgene == 'NA' && method_transform_data !in ['alr', 'alr2']) || (refgene != 'NA' && method_transform_data in ['alr', 'alr2'])
-        } else if (full == 'nozero'){
-            (refgene == 'NA' && method_transform_data !in ['alr', 'alr2']) || (refgene in params.refgenes_nozero && method_transform_data in ['alr', 'alr2'])
+        if (refgene == 'NA'){
+            method_transform_data !in ['alr', 'alr2']
+        }else if(refgene in params.refgenes_nozero && full == 'nozero'){
+            method_transform_data in ['alr', 'alr2']
+        }else if(refgene != 'NA' && full == 'full'){
+            method_transform_data in ['alr', 'alr2']
         }
     }
 

@@ -24,6 +24,7 @@ process PLOT_SCATTER_VS_INDEX {
     path "scatter-var-geneindex*.png"
     path ".command.trace"
     path ".command.sh"
+    path ".command.log"
 
     script:
     """

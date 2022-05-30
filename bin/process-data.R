@@ -17,12 +17,12 @@ parser = parser$parse_args()
 
 # check arguments
 if (!is.null(parser$method_zero) && !( parser$method_zero %in% c("zcompositions", "one", "min", "pseudocount") )){
-    stop("wrong zero replacement method - ", method_zero)
+    stop("wrong zero replacement method - ", parser$method_zero)
 }
-if (!is.null(parser$method_transf) && !( parser$method_transf %in% c("log2", "clr", "alr", "alr2", "clr2", "tmm", "scran","tmm2","tmmcpm") )){
-    stop("wrong transformation or normalization method - ", method_transf)
+if (!is.null(parser$method_transf) && !( parser$method_transf %in% c("log2", "clr", "alr", "clr2", "alr2", "tmmpre","tmmpos", "tmmcpm", "tmmscaled", "scran") )){
+    stop("wrong transformation or normalization method - ", parser$method_transf)
 }
-
+pseudo.count = 1
 
 # read and process data --------------------------------------------------------
 
@@ -81,61 +81,6 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min", "pseudoc
     return(count)
 }
 
-normalize_data <- function(count, method=c("tmm", "scran","tmm2","tmmcpm")){
-    method = match.arg(method)
-    message("normalizing data with method ", method)
-    if (method == "tmm"){
-        require(edgeR)
-        # Note that normalization in edgeR is model-based, and the original read counts are not themselves transformed. This means that users should not transform the read counts in any way
-        # before inputing them to edgeR. For example, users should not enter RPKM or FPKM values to edgeR in place of read counts. Such quantities will prevent edgeR from correctly
-        # estimating the mean-variance relationship in the data, which is a crucial to the statistical
-        # strategies underlying edgeR. Similarly, users should not add artificial values to the counts
-        # before inputing them to edgeR
-
-        # For further information check: https://www.biostars.org/p/84087/ and https://www.biostars.org/p/317701/
-        count       = t(count) # it requires row=genes, col=cells
-        y           = DGEList(counts=count)   
-        y           = calcNormFactors(y, method="TMM")
-        size.factor = y$samples$norm.factors
-        effective.libsize = y$samples$lib.size * size.factor   
-        count       = t(count) / effective.libsize * 1e6
-    }else if (method == "tmm2"){
-        require(edgeR)
-        count       = t(count) # it requires row=genes, col=cells
-        y           = DGEList(counts=count)   
-        y           = calcNormFactors(y, method="TMM")
-        size.factor = y$samples$norm.factors
-        effective.libsize = y$samples$lib.size * size.factor   
-        size.factor = effective.libsize
-        count       = t(count) 
-    }else if (method == "tmmcpm"){
-        require(edgeR)
-        count       = t(count)
-        y           = DGEList(counts=count)   
-        y           = calcNormFactors(y, method="TMM")
-        norm        = cpm(y, log=T, prior.count=1)
-        count       = t(norm)
-        size.factor = y$samples$norm.factors
-        effective.libsize = y$samples$lib.size * size.factor   
-        size.factor = effective.libsize
-    }else if (method == "scran"){
-        require(scran)
-        require(scuttle)
-        require(SingleCellExperiment)
-        count       = t(count)   # it requires row=genes, col=cells
-        sce         = SingleCellExperiment(list(counts=count))
-        clusters    = quickCluster(sce)
-        sce         = computeSumFactors(sce, clusters=clusters)  
-        size.factor = sce@colData@listData$sizeFactor
-        count       = t(count) / size.factor
-        ## TODO count = log1p( t( t(count) / centered.size.factor ) ) / log(2)
-    }
-
-    # TODO add other popular normalization procedures
-    norm = list(count = count, size.factor = size.factor)
-    return(norm)
-}
-
 calculate_geom_mean <-  function(count){
     gm = apply( count, 1, function(x) exp(mean(log(x[x!=0]))) )
     return(gm)
@@ -144,70 +89,107 @@ calculate_geom_mean <-  function(count){
 
 # transform/normalize data --------------------------------------------------------------
 
-if (parser$method_transf %in% c('log2', 'clr', 'alr')){
-    if(!is.null(parser$method_zero)) count = replace_zero(count, parser$method_zero, pseudo.coount=1)
+if (parser$method_transf == 'log2'){
+    message("log2-transforming data")
+    count = replace_zero(count, parser$method_zero, pseudo.count=pseudo.count)
+    count = log2(count)
 
-    if (parser$method_transf == "log2"){
-        message("log-transforming data")
-        count = log2(count)
+}else if (parser$method_transf == 'alr'){
+    message("alr-transforming data")
+    count = replace_zero(count, parser$method_zero, pseudo.count=pseudo.count)
+    size.factor = count[,nrefgene]
+    count = count[,-nrefgene] / size.factor 
+    count = log(count)
 
-    }else if(parser$method_transf == "clr"){
-        message("clr-transforming data")
-        # count = propr:::proprCLR(count)
-        size.factor = calculate_geom_mean(count)
-        count = log(count / size.factor)
+}else if (parser$method_transf == 'alr2'){
+    message("alr2-transforming data")
+    size.factor = replace_zero(count, parser$method_zero, pseudo.count=pseudo.count)[,nrefgene]
+    count = count[,-nrefgene] / size.factor 
+    count = replace_zero(count, parser$method_zero, pseudo.count=pseudo.count)
+    count = log(count)
 
-    }else if(parser$method_transf == "alr"){
-        if (!is.numeric(nrefgene)) stop("Make sure you are giving the correct reference gene index for ALR-transformation")
-        message("alr-transforming data")
-        size.factor = count[,nrefgene]
-        count = propr:::proprALR(count, nrefgene)
-    }
-
-}else if(parser$method_transf == 'alr2'){
-    count2 = replace_zero(count, parser$method_zero, pseudo.count=1)
-    size.factor = count2[,nrefgene]
-    count = count[,-nrefgene] / size.factor
-    count = replace_zero(count, parser$method_zero, pseudo.count=1)
+}else if (parser$method_transf == 'clr'){
+    message("clr-transforming data")
+    count = replace_zero(count, parser$method_zero, pseudo.count=pseudo.count)
+    size.factor = calculate_geom_mean(count)
+    count = count / size.factor
     count = log(count)
 
 }else if (parser$method_transf == 'clr2'){
-    count2 = replace_zero(count, parser$method_zero, pseudo.count=1)
-    size.factor = calculate_geom_mean(count2)
+    message("clr2-transforming data")
+    size.factor = calculate_geom_mean( replace_zero(count, parser$method_zero, pseudo.count=pseudo.count) )
     count = count / size.factor
-    count = replace_zero(count, parser$method_zero, pseudo.count=1)
+    count = replace_zero(count, parser$method_zero, pseudo.count=pseudo.count)
     count = log(count)
 
-}else if (parser$method_transf %in% c('tmm','scran')){
-    norm  = normalize_data(count, parser$method_transf)
-    count = norm$count
-    if(!is.null(parser$method_zero)) count = replace_zero(count, parser$method_zero, pseudo.count=1)
-    count = log2(count)
-    size.factor = norm$size.factor
+}else if (parser$method_transf == 'tmmcpm' && parser$method_zero == 'pseudocount'){
+    message("normalizing data with method tmmcpm")
+    require(edgeR)
+    count       = t(count) # it requires row=genes, col=cells
+    y           = DGEList(counts=count)   
+    y           = calcNormFactors(y, method="TMM")
+    size.factor = y$samples$norm.factors
+    eff.libsize = y$samples$lib.size * size.factor
+    adj.prior   = pseudo.count * eff.libsize / mean(eff.libsize)
+    adj.libsize = eff.libsize + 2 * adj.prior
+    count       = (t(count) + adj.prior) / adj.libsize * 1e6  ## note that adj.prior has length libsize, therefore you should be careful when transposing and making matrix calculations
+    count       = log2(count)
 
-}else if (parser$method_transf == 'tmm2'){  ## corrected version,  transcript per milion
-    norm  = normalize_data(count, 'tmm2')
-    size.factor = norm$size.factor
-    if(!is.null(parser$method_zero)) count = replace_zero(count, parser$method_zero, pseudo.count=1)
-    count = count / size.factor * 1e6
-    count = log2(count)
+}else if (parser$method_transf == 'tmmpre'){
+    message("normalizing data with method tmmpre")
+    require(edgeR)
+    count       = t(count) # it requires row=genes, col=cells
+    y           = DGEList(counts=count)   
+    y           = calcNormFactors(y, method="TMM")
+    size.factor = y$samples$norm.factors
+    effective.libsize = y$samples$lib.size * size.factor
+    count       = replace_zero(t(count), parser$method_zero, pseudo.count=pseudo.count)   
+    count       = count / effective.libsize * 1e6
+    count       = log2(count)  
 
-}else if (parser$method_transf == 'tmmcpm' & parser$method_zero == 'pseudocount'){
-    norm  = normalize_data(count, 'tmmcpm')
-    count = norm$count
-    size.factor = norm$size.factor
+}else if (parser$method_transf == 'tmmpos'){
+    message("normalizing data with method tmmpos")
+    require(edgeR)
+    count       = t(count) # it requires row=genes, col=cells
+    y           = DGEList(counts=count)   
+    y           = calcNormFactors(y, method="TMM")
+    size.factor = y$samples$norm.factors
+    effective.libsize = y$samples$lib.size * size.factor   
+    count       = t(count) / effective.libsize * 1e6
+    count       = replace_zero(count, parser$method_zero, pseudo.count=pseudo.count)
+    count       = log2(count)  
 
-}else if (parser$method_transf == 'alr2' & parser$method_zero == 'pseudocount'){
-    if (!is.numeric(nrefgene)) stop("Make sure you are giving the correct reference gene index for ALR-transformation")
-    message("alr-transforming data")
-    size.factor = count[,nrefgene]
-    count = count[,-nrefgene]
-    count = count / size.factor
-    count = replace_zero(count, parser$method_zero, pseudo.count=1)
-    count = log2(count)
+}else if (parser$method_transf == 'tmmscaled'){
+    message("normalizing data with method tmmscaled")
+    require(edgeR)
+    count       = t(count) # it requires row=genes, col=cells
+    y           = DGEList(counts=count)   
+    y           = calcNormFactors(y, method="TMM")
+    size.factor = y$samples$norm.factors
+    count       = t(count) / size.factor
+    count       = replace_zero(count, parser$method_zero, pseudo.count=pseudo.count)
+    count       = log2(count)  
+
+}else if (parser$method_transf == 'scran'){
+    message(" normalizing data with method scran")
+    require(scran)
+    require(scuttle)
+    require(SingleCellExperiment)
+    count       = t(count)   # it requires row=genes, col=cells
+    sce         = SingleCellExperiment(list(counts=count))
+    clusters    = quickCluster(sce)
+    sce         = computeSumFactors(sce, clusters=clusters)  
+    size.factor = sce@colData@listData$sizeFactor
+    count       = t(count) / size.factor
+    count       = replace_zero(count, parser$method_zero, pseudo.count=pseudo.count)
+    count       = log2(count)
+
+}else{
+    stop("make sure you introduced the correct processing methods")
 }
 
-# save output
+
+# save output --------------------------------------------------------------
 message("saving output files")
 fwrite(count, file=parser$output, quote=F, sep=",", row.names=F, col.names=F, compress="gzip")
 if (parser$method_transf != 'log2') {

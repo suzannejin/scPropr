@@ -23,7 +23,8 @@ process SIMULATE_DATA {
           file("${dataset}_${exp_sim}+simulate+s${slope}+n${ndata}+c${cell_factor}_full_features.csv"),
           file("${dataset}_${exp_sim}+simulate+s${slope}+n${ndata}+c${cell_factor}_full_barcodes.csv"),
           file(".command.trace"),
-          file(".command.sh")
+          file(".command.sh"),
+          file(".command.log")
 
     script:
     """

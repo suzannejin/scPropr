@@ -25,7 +25,8 @@ process MODEL_DATA {
           file(features), 
           file(barcodes),
           file(".command.trace"),
-          file(".command.sh")
+          file(".command.sh"),
+          file(".command.log")
 
     script:
     """

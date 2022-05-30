@@ -20,7 +20,8 @@ process PROCRUSTES_ANALYSIS {
     output:
     tuple file("${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}_${gene1}.stats"),
           file(".command.trace"),
-          file(".command.sh")
+          file(".command.sh"),
+          file(".command.log")
 
     script:
     gene1 = gene.getSimpleName()
