@@ -15,7 +15,7 @@ parser = parser$parse_args()
 
 # functions -----------------------------------------------------------------------------
 
-FINDALR <- function(data, data.lra, j, weight = FALSE) { 
+FINDALR <- function(data, data.lra, j, gene, weight = FALSE) { 
   
   ### -------------------------------------------------------------------
   ### function to identify the best reference for a set of ALRs
@@ -32,7 +32,7 @@ FINDALR <- function(data, data.lra, j, weight = FALSE) {
   tot.var <- sum(data.lra$sv^2)
   
   ### compute Procrustes correlation
-  message("computing the procrates correlation for gene ", j)
+  message("computing the procrates correlation for gene ", j, " - ", gene)
   dim <- min(nrow(data), ncol(data)) - 1
   # ALR transformation
   alr <- ALR(data, denom=j, weight=weight)
@@ -55,8 +55,9 @@ FINDALR <- function(data, data.lra, j, weight = FALSE) {
   ### the variances of the log-transformed parts
   var.log <- as.numeric( var(log(data[,..j])) ) 
 
-  return(data.frame(
+  return(list(
       j=j, 
+      id=gene,
       tot.var=tot.var, 
       procrust.cor=procrust.cor, 
       var.log=var.log)
@@ -74,6 +75,10 @@ ngene = which(features == parser$gene)
 data.lra = readRDS(parser$lra)
 
 # compute stats -------------------------------------------------------------------------
-stat = FINDALR(data, data.lra, ngene, weight=F)
+stat = FINDALR(data, data.lra, ngene, parser$gene, weight=F)
+part = data[,..ngene]
+dropout = mean(part == 0)
+stat$dropout = dropout
+stat = data.frame(stat)
 fwrite(stat, file=parser$output, quote=F, sep=",", row.names=F, col.names=T)
 message("finished")

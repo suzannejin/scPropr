@@ -18,6 +18,7 @@ process PLOT_MEAN_VS_VARIANCE {
     path "mean-vs-variance-bycell.png"
     path ".command.trace"
     path ".command.sh"
+    path ".command.log"
 
     script:
     """

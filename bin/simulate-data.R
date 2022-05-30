@@ -10,20 +10,14 @@ library(data.table)
 parser <- ArgumentParser(description='Simulate data using scDesign2')
 parser$add_argument('model', type='character', help="Model")
 parser$add_argument('output', type='character', help="Output simulated count data")
-parser$add_argument('--size_factor', type='integer', help="define ratio = (size simulated data) / (size original data)")
-parser$add_argument('--cell_factor', type='double', help="define ratio = (ncell simulated data) / (ncell original data)")
 parser$add_argument('--slope', type='integer', help="Slope of sequencing depth")
 parser$add_argument('--ndata', type='integer', help="Number of simulations for a given slope")
-parser$add_argument('--byslope', action='store_true', help="The datasets with smallest and highest seq depth will have specifically <slope> times difference")
-parser$add_argument('--bystep', action='store_true', help="One dataset and the one with next higher seq depth will have specifically <slope> times difference. So the datasets with smallest and highest seq depth will have < (ndata - 1) * slope > times difference")
+parser$add_argument('--cell_factor', type='double', help="define ratio = (ncell simulated data) / (ncell original data)")
 parser = parser$parse_args()
 
 # functions -----------------------------------------------------------------------------
 
-get_seqdepth_byslope <- function(slope, ndata){
-    # data = c(1:ndata)
-    # seqdepth = c(1, data[1:ndata-1] * slope ) 
-    # seqdepth = 1 + (seqdepth - min(seqdepth)) * (slope - 1) / (max(seqdepth) - min(seqdepth))
+get_seqdepth <- function(slope, ndata){
     step = (slope - 1) / (ndata - 1)
     seqdepth = c(1)
     v = 1
@@ -31,22 +25,8 @@ get_seqdepth_byslope <- function(slope, ndata){
         v = v + step
         seqdepth[i] = v
     }
+    seqdepth = seqdepth / sum(seqdepth)
     return(seqdepth)
-}
-get_seqdepth_bystep <- function(slope, ndata){
-    data = c(1:ndata)
-    seqdepth = c(1, data[1:ndata-1] * slope )
-    return(seqdepth)
-}
-get_nreads_ncells <- function(model, seqdepth){
-    ndata = length(seqdepth)
-    nreads   = c()
-    ncells   = c()
-    for (i in 1:length(seqdepth)){
-        nreads[i] = round( as.numeric(model$n_read) * seqdepth[i] / ndata )
-        ncells[i] = round( as.numeric(model$n_cell) / ndata )
-    }
-    return(list(nreads, ncells))
 }
 
 # calculate nreads and ncells -----------------------------------------------------------
@@ -56,25 +36,10 @@ model = readRDS(parser$model)
 message("loading model with [nread:", model$n_read, "][ncell:", model$n_cell, "]")
 
 # calculate
-if (!is.null(parser$size_factor)){
-    seqdepth = c(parser$size_factor)
-    nreads = c(as.numeric(model$n_read) * parser$size_factor)
-    ncells = c(as.numeric(model$n_cell))
-}else if(!is.null(parser$slope)){
-    if (parser$byslope){
-        seqdepth = get_seqdepth_byslope(parser$slope, parser$ndata)
-    }else if(parser$bystep){
-        seqdepth = get_seqdepth_bystep(parser$slope, parser$ndata)
-    }else{
-        stop("You should specify --bystep or --byslope")
-    }
-    l = get_nreads_ncells(model, seqdepth)
-    nreads = l[[1]]
-    ncells = l[[2]]
-}
-if (!is.null(parser$cell_factor)){
-    ncells = ncells * parser$cell_factor
-}
+seqdepth = get_seqdepth(parser$slope, parser$ndata)
+nreads   = model$n_read * seqdepth
+ncells   = rep( model$n_cell, length(seqdepth) ) / parser$ndata
+ncells   = ncells * parser$cell_factor   # TODO think better how we should deal with cell_factor change. Should I also modify the seqdepth, when less cells or so? 
 
 # simulate data -------------------------------------------------------------------------
 

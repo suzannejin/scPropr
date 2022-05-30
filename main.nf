@@ -34,7 +34,7 @@ ch_count
 ///////////////////////////////////////////////////////////////
 
 // modules
-include { SELECT_NOZERO_GENES } from "${launchDir}/modules/select-data.nf"
+include { SELECT_NOZERO_GENES; EXP_NOZERO_GENES_2_SELECT } from "${launchDir}/modules/select-data.nf"
 include { GET_RELATIVE; GET_RELATIVE_FOR_PLOT } from "${launchDir}/modules/get-relative.nf"
 
 // subworkflows
@@ -48,7 +48,7 @@ workflow {
 
 
     /* subworkflow: model and simulate data with scDesign2 */
-    if (params.do_simulation_byslope || params.do_simulation_bydepth || params.do_simulation_bystep){
+    if ( params.do_simulation ){
 
         ch_input
             .filter{ it[1] in params.do_simulation_type }
@@ -59,23 +59,39 @@ workflow {
             ch_input2simulation,
             params.simulation_slope,
             params.simulation_ndata,
-            params.simulation_size_factor,
             params.simulation_cell_factor,
-            params.do_simulation_byslope, 
-            params.do_simulation_bydepth,
-            params.do_simulation_bystep
+            params.do_simulation
         )  
         ch_input
             .mix( DATA_SIMULATION.out.ch_simulated )
             .set{ ch_input }    
     } 
 
+    // TODO should I also include a general filtering step for all the datasets?
+    // since the simulated datasets might have high zero percentage..
 
     /* module: get non-zero gene datasets */
     if (params.do_nozero_genes){
-        SELECT_NOZERO_GENES(ch_input)
+        // select non zero genes in full experimental data
+        SELECT_NOZERO_GENES(
+            ch_input.filter{ it[1] == 'experimental' }
+        )
         ch_input
             .mix( SELECT_NOZERO_GENES.out )
+            .set{ ch_input }
+        // do the same for the other dataset following this non zero gene set
+        // thus all the different data types will have the same gene set (eg. simulated data with different seq depth), so that they can be comparable
+        // TODO try to filter the genes independently. The gene sets should not be too different...
+        ch_input
+            .filter{ it[1] != 'experimental' }
+            .combine(
+                SELECT_NOZERO_GENES.out.map{ it -> [ it[0], it[5] ] }.unique(),
+                by: 0
+            )
+            .set{ ch_input2select }
+        EXP_NOZERO_GENES_2_SELECT( ch_input2select )
+        ch_input
+            .mix( EXP_NOZERO_GENES_2_SELECT.out )
             .set{ ch_input }
     }
 
@@ -88,10 +104,13 @@ workflow {
 
     /* subworkflow: plot basic figures for experimental and simulated data */
     // TODO also compute data exploration plots for transformed data
-    DATA_EXPLORATION( ch_input )  
+    if (params.do_plot_data_exploration){
+        DATA_EXPLORATION( ch_input )  
+    }
 
 
     /* subworkflow: data processing */
+    ch_ori = ch_input
     DATA_PROCESSING(
         ch_input,
         params.method_replace_zero.tokenize(','),
@@ -102,8 +121,10 @@ workflow {
     /* subworkflow: compute correlation */
     CORRELATION(
         DATA_PROCESSING.out,
+        ch_ori,
         params.method_correlation.tokenize(','),
-        params.method_evaluation.tokenize(',')
+        params.method_evaluation.tokenize(','),
+        params.scatter_colorby
     )
 
     // TODO plot scatter vs index, colored by reference gene

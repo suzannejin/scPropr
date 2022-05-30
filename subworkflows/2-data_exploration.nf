@@ -19,8 +19,6 @@ workflow DATA_EXPLORATION {
 
     main:
 
-    // TODO run data exploration for phase S experimental dataset as well
-
     /* plot 
      * 1. reads per cell
      * 2. genes per cell
@@ -68,6 +66,6 @@ workflow DATA_EXPLORATION {
      */
     
 
-    /* correlation between umi counts and total rna per cell */
+    /* TODO correlation between umi counts and total rna per cell */
 
 }

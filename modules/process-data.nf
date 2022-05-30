@@ -13,7 +13,6 @@ process PROCESS_DATA {
     storeDir "${params.outdir}/${dataset}/processed/${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}_${method_transform_data}_${refgene}"
     // publishDir "${params.outdir}/${dataset}/processed/${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}_${method_transform_data}_${refgene}", mode: params.publish_dir_mode
     
-
     input:
     tuple val(dataset), 
           val(exp_sim), 
@@ -32,10 +31,21 @@ process PROCESS_DATA {
           file(features),
           file(barcodes),
           file(".command.trace"),
-          file(".command.sh")
+          file(".command.sh"),
+          file(".command.log")
 
     when:
-    (method_transform_data != 'alr' && refgene == 'NA') || (method_transform_data == 'alr' && refgene != 'NA')
+    if (!params.do_transform_abs && abs_rel == 'absolute'){
+        (refgene == 'NA' && method_transform_data == 'log2')
+    }else{
+        if (refgene == 'NA'){
+            method_transform_data !in ['alr', 'alr2']
+        }else if(refgene in params.refgenes_nozero && full == 'nozero'){
+            method_transform_data in ['alr', 'alr2']
+        }else if(refgene != 'NA' && full == 'full'){
+            method_transform_data in ['alr', 'alr2']
+        }
+    }
 
     script:
     def ref_gene_cml = refgene == 'NA' ? " " : "--refgene $refgene" 
@@ -48,6 +58,7 @@ process PROCESS_DATA {
         --method_zero $method_replace_zero \
         --method_transf $method_transform_data \
         $ref_gene_cml 
+    sleep 30
     """
 
     stub:

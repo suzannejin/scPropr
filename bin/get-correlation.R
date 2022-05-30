@@ -14,8 +14,20 @@ parser$add_argument('-m', '--method', type='character', help="Correlation method
 parser = parser$parse_args()
 
 # read count data
+message('reading input data')
 count = fread(parser$input)
 print(dim(count))
+
+# # remove cells with NA - introduced by alr2
+# pos   = which( rowSums(is.na(count)) > 0)
+# if (length(pos) > 0){
+#     message('remove cells with NA')
+#     count = count[-pos,]
+#     print(dim(count))
+#     if (length(pos) > 10){
+#         stop('too many cells with NA. Please make sure everything is correct')
+#     }
+# }
 
 # compute association coefficients ------------------------------------------------------
 message("calculating coefficients with method ", parser$method)

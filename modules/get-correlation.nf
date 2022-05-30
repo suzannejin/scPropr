@@ -27,7 +27,8 @@ process GET_CORRELATION {
           file(features), 
           file("${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}.lambda"),
           file(".command.trace"),
-          file(".command.sh")
+          file(".command.sh"),
+          file(".command.log")
 
     script:
     """
@@ -36,6 +37,7 @@ process GET_CORRELATION {
         -o ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}.csv.gz \
         -o2 ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}.lambda \
         -m $method_cor
+    sleep 30
     """
 
     stub:

@@ -20,6 +20,7 @@ process PLOT_DROPOUT {
     file "nozero_genes"
     file ".command.trace"
     file ".command.sh"
+    file ".command.log"
 
     script:
     """

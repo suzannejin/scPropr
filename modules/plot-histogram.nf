@@ -23,6 +23,7 @@ process PLOT_HISTOGRAM {
     path "histogram-var-pergene.png"
     path ".command.trace"
     path ".command.sh"
+    path ".command.log"
 
     script:
     """

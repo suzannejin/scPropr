@@ -18,6 +18,7 @@ process PLOT_SEQDEPTH_VIOLIN_BARPLOT {
     file "seqdepth-violin-barplot.png"
     file ".command.trace"
     file ".command.sh"
+    file ".command.log"
 
     script:
     def exp_sims = exp_sim.join(' ')
