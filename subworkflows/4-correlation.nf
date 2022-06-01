@@ -36,7 +36,7 @@ workflow CORRELATION {
     /* plot transformed count on relative vs absolute data */
     ch_cor
         .filter{ it[3] == 'absolute' }
-        .map{ it -> [ it[0..2], it[4..8] ].flatten() }
+        .map{ it -> [ it[0..2], it[4..8] ].flatten() }  
         .unique()
         .set{ ch_abs }
     ch_cor
@@ -46,7 +46,7 @@ workflow CORRELATION {
         .set{ ch_rel }  
     ch_abs
         .combine( ch_rel, by:[0,1,2,3,4,5,6] )
-        .groupTuple( by:[0,1,2,3] )
+        .groupTuple( by:[0,1,2,6] )
         .set{ ch2plot_abs_vs_rel }   
     PLOT_ABS_VS_REL_COR(ch2plot_abs_vs_rel)
 
@@ -62,14 +62,19 @@ workflow CORRELATION {
         ] }
         .set{ ch_ori }
     ch_cor
-        .filter { it[3] == 'absolute' && it[5] == 'log2' }
-        .map{ it -> [ it[0..2], it[4], it[8..9], it[7] ].flatten() } 
+        .filter{ it[3] == 'relative' }
+        .map{ it -> [ it[0..2], it[7], it[4..6], it[8] ].flatten() }
         .unique()
-        .set{ ch_log2abs }  // dataset, exp_sim, full, method_replace_zero, cor matrix, features, method_cor
+        .set{ ch_rel2 } 
+    ch_cor
+        .filter { it[3] == 'absolute' && it[5] == 'log2' }
+        .map{ it -> [ it[0..2], it[7..9] ].flatten() } 
+        .unique()
+        .set{ ch_log2abs }  
     ch_log2abs
-        .combine( ch_rel, by:[0,1,2,3,6] )  
-        .map{ it -> [ it[0..3], it[7..8], it[4], it[5], it[9], it[6] ].flatten() }
-        .groupTuple( by:[0,1,2,3] )
+        .combine( ch_rel2, by:[0,1,2,3] )   
+        .map{ it -> [ it[0..2], it[6..8], it[3], it[4], it[9], it[5] ].flatten() }
+        .groupTuple( by:[0,1,2,6] )
         .map{ it -> [
             it[0], 
             it[1],
@@ -94,10 +99,10 @@ workflow CORRELATION {
 
     /* TODO compute metric */
     ch_log2abs
-        .combine( ch_rel, by:[0,1,2,3,6] )
-        .map{ it -> [ it[0..3], it[7..8], it[4], it[5], it[9], it[6] ].flatten() }
+        .combine( ch_rel2, by:[0,1,2,3] )
+        .map{ it -> [ it[0..2], it[6..8], it[3], it[4], it[9], it[5] ].flatten() }
         .combine( ch_ori, by:[0,1,2])
-        .set{ ch2evaluate_log2abs_vs_rel }   // dataset, exp_sim, full, method_replace_zero, method_transf_zero, refgene, method_cor, log2abs matrix, rel matrix, features
+        .set{ ch2evaluate_log2abs_vs_rel }   // dataset, exp_sim, full, method_replace_zero, method_transf_zero, refgene, method_cor, log2abs matrix, rel matrix, features, ori
     EVALUATE_LOG2ABS_VS_REL_COR(
         ch2evaluate_log2abs_vs_rel, 
         method_eval
@@ -109,11 +114,8 @@ workflow CORRELATION {
 
 
     /* individual plots */
-    ch2evaluate_log2abs_vs_rel
-        .combine( ch_ori, by:[0,1,2] )
-        .set{ ch2plot_log2abs_vs_rel_colored_indiv }
-    PLOT_LOG2ABS_VS_REL_COR_COLORED_INDIV(ch2plot_log2abs_vs_rel_colored_indiv)
-    PLOT_LOG2ABS_VS_REL_COR_COLORED_INDIV_GM(ch2plot_log2abs_vs_rel_colored_indiv)
+    PLOT_LOG2ABS_VS_REL_COR_COLORED_INDIV(ch2evaluate_log2abs_vs_rel)
+    PLOT_LOG2ABS_VS_REL_COR_COLORED_INDIV_GM(ch2evaluate_log2abs_vs_rel)
 
 
     emit:

@@ -61,7 +61,7 @@ process EVALUATE_LOG2ABS_VS_REL_COR_FILTER {
     label 'process_high'
     container 'suzannejin/scpropr:propr'
     tag "${dataset}-${exp_sim}-${full}-${method_replace_zero}-${method_transform_data}-${refgene}-${method_cor}-${method_eval}"
-    storeDir "${params.outdir}/${dataset}/evaluate-filtered/${method_eval}/${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}"
+    storeDir "${params.outdir}/${dataset}/evaluate-filter${params.evaluate_filter}/${method_eval}/${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}"
 
     input:
     tuple val(dataset), 
@@ -87,26 +87,28 @@ process EVALUATE_LOG2ABS_VS_REL_COR_FILTER {
     params.do_evaluate_log2abs_vs_rel_cor_filter
 
     script:
+    def filter = params.evaluate_filter
     """
     evaluate-log2abs-vs-rel-cor.R \
         --ori $ori \
         --abs $abs \
         --rel $rel \
         --features $features \
-        --filter 0.2 \
+        --filter $filter \
         --out ${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}_${method_eval}.csv \
         --method $method_eval
     sleep 30
     """
 
     stub:
+    def filter = params.evaluate_filter
     """
     echo evaluate-log2abs-vs-rel-cor.R \
         --ori $ori \
         --abs $abs \
         --rel $rel \
         --features $features \
-        --filter 0.2 \
+        --filter $filter \
         --out ${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}_${method_eval}.csv \
         --method $method_eval
     touch ${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}_${method_eval}.csv

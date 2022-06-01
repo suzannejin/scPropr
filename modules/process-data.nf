@@ -36,26 +36,24 @@ process PROCESS_DATA {
 
     when:
     if (!params.do_transform_abs && abs_rel == 'absolute'){
-        (refgene == 'NA' && method_transform_data == 'log2')
+        if (method_replace_zero == 'NA' && method_transform_data == 'log2' && refgene == 'NA'){true}
     }else{
-        if (refgene == 'NA'){
-            method_transform_data !in ['alr', 'alr2']
-        }else if(refgene in params.refgenes_nozero && full == 'nozero'){
-            method_transform_data in ['alr', 'alr2']
-        }else if(refgene != 'NA' && full == 'full'){
-            method_transform_data in ['alr', 'alr2']
-        }
+        if (method_replace_zero == 'NA' && method_transform_data in ['log2','tmm','scran'] && refgene == 'NA'){true}
+        else if (method_replace_zero != 'NA' && method_transform_data == 'clr' && refgene == 'NA'){true}
+        else if (method_replace_zero != 'NA' && method_transform_data == 'alr' && refgene != 'NA' && full == 'full'){true}
+        else if (method_replace_zero != 'NA' && method_transform_data == 'alr' && refgene in params.refgenes_nozero && full == 'nozero'){true}
     }
 
     script:
     def ref_gene_cml = refgene == 'NA' ? " " : "--refgene $refgene" 
+    def method_zero = method_replace_zero == 'NA' ? " " : "--method_zero $method_replace_zero"
     """
     process-data.R \
         -i $count \
         -o ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}_${method_transform_data}_${refgene}.csv.gz \
         -o2 ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}_${method_transform_data}_${refgene}.list \
         --features $features \
-        --method_zero $method_replace_zero \
+        $method_zero \
         --method_transf $method_transform_data \
         $ref_gene_cml 
     sleep 30
@@ -63,13 +61,14 @@ process PROCESS_DATA {
 
     stub:
     def ref_gene_cml = method_transform_data == 'alr' ? "--refgene $refgene" : " "
+    def method_zero = method_replace_zero == 'NA' ? " " : "--method_zero $method_replace_zero"
     """
     echo process-data.R \
         -i $count \
         -o ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}_${method_transform_data}_${refgene}.csv.gz \
         -o2 ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}_${method_transform_data}_${refgene}.list \
         --features $features \
-        --method_zero $method_replace_zero \
+        $method_zero \
         --method_transf $method_transform_data \
         $ref_gene_cml
     touch ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}_${method_transform_data}_${refgene}.csv.gz

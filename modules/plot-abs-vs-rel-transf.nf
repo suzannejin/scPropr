@@ -4,8 +4,8 @@
 process PLOT_ABS_VS_REL_TRANSF {
     
     container 'suzannejin/scpropr:plot'
-    tag "${dataset}-${exp_sim}-${full}-${method_replace_zero}"
-    publishDir "${params.outdir}/${dataset}/plot/abs-vs-rel-transf/${dataset}_${exp_sim}_${full}_${method_replace_zero}", mode: params.publish_dir_mode
+    tag "${dataset}-${exp_sim}-${full}"
+    publishDir "${params.outdir}/${dataset}/plot/abs-vs-rel-transf/${dataset}_${exp_sim}_${full}", mode: params.publish_dir_mode
 
     input:
     tuple val(dataset), 
@@ -27,40 +27,44 @@ process PLOT_ABS_VS_REL_TRANSF {
     params.do_plot_abs_vs_rel_transf && params.do_transform_abs
 
     script:
-    def abs2 = abs.join(' ')
-    def rel2 = rel.join(' ')
-    def methods = method_transform_data.join(' ')
-    def refgenes = refgene.join(' ')
+    def abs2           = abs.join(' ')
+    def rel2           = rel.join(' ')
+    def methods_zero   = method_replace_zero.join(' ')
+    def methods_transf = method_transform_data.join(' ')
+    def refgenes       = refgene.join(' ')
     """
     plot-abs-vs-rel-transf.R \
         --abs $abs2 \
         --rel $rel2 \
-        --method $methods \
+        --method_zero $methods_zero \
+        --method_transf $methods_transf \
         --refgene $refgenes \
-        --output ${dataset}_${exp_sim}_${full}_${method_replace_zero}.png
+        --output ${dataset}_${exp_sim}_${full}.png
     """
 
     stub:
-    def abs2 = abs.join(' ')
-    def rel2 = rel.join(' ')
-    def methods = method_transform_data.join(' ')
-    def refgenes = refgene.join(' ')
+    def abs2           = abs.join(' ')
+    def rel2           = rel.join(' ')
+    def methods_zero   = method_replace_zero.join(' ')
+    def methods_transf = method_transform_data.join(' ')
+    def refgenes       = refgene.join(' ')
     """
     echo plot-abs-vs-rel-transf.R \
         --abs $abs2 \
         --rel $rel2 \
-        --method $methods \
+        --method_zero $methods_zero \
+        --method_transf $methods_transf \
         --refgene $refgenes \
-        --output ${dataset}_${exp_sim}_${full}_${method_replace_zero}.png
-    touch ${dataset}_${exp_sim}_${full}_${method_replace_zero}.png
+        --output ${dataset}_${exp_sim}_${full}.png
+    touch ${dataset}_${exp_sim}_${full}.png
     """
 }
 
 process PLOT_LOG2ABS_VS_REL_TRANSF {
     
     container 'suzannejin/scpropr:plot'
-    tag "${dataset}-${exp_sim}-${full}-${method_replace_zero}"
-    publishDir "${params.outdir}/${dataset}/plot/log2abs-vs-rel-transf/${dataset}_${exp_sim}_${full}_${method_replace_zero}", mode: params.publish_dir_mode
+    tag "${dataset}-${exp_sim}-${full}"
+    publishDir "${params.outdir}/${dataset}/plot/log2abs-vs-rel-transf/${dataset}_${exp_sim}_${full}", mode: params.publish_dir_mode
 
     input:
     tuple val(dataset), 
@@ -74,7 +78,7 @@ process PLOT_LOG2ABS_VS_REL_TRANSF {
           file(features)
 
     output:
-    file "${dataset}_${exp_sim}_${full}_${method_replace_zero}.png"
+    file "${dataset}_${exp_sim}_${full}.png"
     file ".command.trace"
     file ".command.sh"
     file ".command.log"
@@ -83,33 +87,37 @@ process PLOT_LOG2ABS_VS_REL_TRANSF {
     params.do_plot_log2abs_vs_rel_transf
 
     script:
-    def abs2 = abs.join(' ')
-    def rel2 = rel.join(' ')
-    def methods = method_transform_data.join(' ')
-    def refgenes = refgene.join(' ')
+    def abs2           = abs.join(' ')
+    def rel2           = rel.join(' ')
+    def methods_zero   = method_replace_zero.join(' ')
+    def methods_transf = method_transform_data.join(' ')
+    def refgenes       = refgene.join(' ')
     """
     plot-log2abs-vs-rel-transf.R \
         --abs $abs2 \
         --rel $rel2 \
-        --method $methods \
+        --method_zero $methods_zero \
+        --method_transf $methods_transf \
         --refgene $refgenes \
         --features $features \
-        --output ${dataset}_${exp_sim}_${full}_${method_replace_zero}.png
+        --output ${dataset}_${exp_sim}_${full}.png
     """
 
     stub:
-    def abs2 = abs.join(' ')
-    def rel2 = rel.join(' ')
-    def methods = method_transform_data.join(' ')
-    def refgenes = refgene.join(' ')
+    def abs2           = abs.join(' ')
+    def rel2           = rel.join(' ')
+    def methods_zero   = method_replace_zero.join(' ')
+    def methods_transf = method_transform_data.join(' ')
+    def refgenes       = refgene.join(' ')
     """
     echo plot-log2abs-vs-rel-transf.R \
         --abs $abs2 \
         --rel $rel2 \
-        --method $methods \
+        --method_zero $methods_zero \
+        --method_transf $methods_transf \
         --refgene $refgenes \
         --features $features \
-        --output ${dataset}_${exp_sim}_${full}_${method_replace_zero}.png
-    touch ${dataset}_${exp_sim}_${full}_${method_replace_zero}.png
+        --output ${dataset}_${exp_sim}_${full}.png
+    touch ${dataset}_${exp_sim}_${full}.png
     """
 }

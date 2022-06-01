@@ -113,8 +113,8 @@ workflow {
     ch_ori = ch_input
     DATA_PROCESSING(
         ch_input,
-        params.method_replace_zero.tokenize(','),
-        params.method_transform_data.tokenize(','),
+        params.method_replace_zero.plus('NA'),
+        params.method_transform_data,
         params.refgenes.plus('NA')
     )
 

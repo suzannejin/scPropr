@@ -10,7 +10,8 @@ library(ggpubr)
 parser = ArgumentParser(description='Compare transformed count on relative vs absolute data.')
 parser$add_argument('--abs', type='character', nargs='+', help="Transformed count on absolute data")
 parser$add_argument('--rel', type='character', nargs='+', help="Transformed count on relative data")
-parser$add_argument('--method', type='character', nargs='+', help="Transformation method names")
+parser$add_argument('--method_zero', type='character', nargs='+', help="Zero handling method names")
+parser$add_argument('--method_transf', type='character', nargs='+', help="Transformation method names")
 parser$add_argument('--refgene', type='character', nargs='+', help="Reference gene names")
 parser$add_argument('--output', type='character', help="Output figure filename")
 parser$add_argument('--npoint', type='integer', default=1e4, help="Number of points to plot")
@@ -21,7 +22,7 @@ parser = parser$parse_args()
 df = data.frame(matrix(ncol=3, nrow=0))
 colnames(df) = c("x", "y", "z")
 methods = c()
-for (i in 1:length(parser$method)){
+for (i in 1:length(parser$method_transf)){
     # read x
     x = parser$abs[i]
     x = as.matrix(fread(x))
@@ -40,13 +41,7 @@ for (i in 1:length(parser$method)){
     y = y[pos]
     
     # update data frame
-    if (is.na(parser$refgene[i]) || parser$refgene[i] == 'NA') {
-        refgene = ''
-        method  = parser$method[i]
-    } else {
-        refgene = parser$refgene[i]
-        method  = paste0(parser$method[i], ' - ', refgene)
-    }
+    method  = paste0(parser$method_zero[i], ' - ', parser$method_transf[i], ' - ', parser$refgene[i])
     methods = c(methods, method)
     df2 = data.frame("x"=x, "y"=y, "z"=rep(method, length(x)))
     df = rbind(df, df2)

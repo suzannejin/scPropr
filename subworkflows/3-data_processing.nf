@@ -52,32 +52,31 @@ workflow DATA_PROCESSING {
         .map{ it -> [it[0..6], it[10..11], it[7..8]].flatten() }
         .set{ ch_processed2 }  // dataset, exp_sim, full, abs_rel, replace_zero, transf_data, refgene, features, barcodes, original_count, norm_count
 
-
     /* scatter plot original count data vs processed count data */
     ch_processed2
         .groupTuple( by:[0,1,2,3,4,7,8,9] )
         .set{ ch2plot_original_vs_transformed }
-    PLOT_ORIGINAL_VS_TRANSFORMED(ch2plot_original_vs_transformed)  
+    PLOT_ORIGINAL_VS_TRANSFORMED(ch2plot_original_vs_transformed)
 
 
     /* scatter plot log2 count data vs processed count data */
     ch_processed2
         .filter{ it[5] == 'log2' }
-        .map{ it -> [ it[0..4], it[10] ].flatten() }
+        .map{ it -> [ it[0..3], it[10] ].flatten() }
         .unique()
         .set{ ch_tmp }
     ch_processed2
         .filter{ it[5] != 'log2' }
         .map{ it -> [ it[0..8], it[10] ].flatten() }
         .unique()
-        .combine( ch_tmp, by:[0,1,2,3,4] )
+        .combine( ch_tmp, by:[0,1,2,3] )
         .unique()
         .map{ it -> [ 
             it[0..8],
             it[10],
             it[9]
          ].flatten() }
-        .groupTuple( by:[0,1,2,3,4,7,8,9] )
+        .groupTuple( by:[0,1,2,3,7,8,9] )
         .set{ ch2plot_log_vs_transformed }    // dataset, exp_sim, full, abs_rel, replace_zero, transf_data, refgene, features, barcodes, log2_count, norm_count
     PLOT_LOG_VS_TRANSFORMED(ch2plot_log_vs_transformed)
 
@@ -103,13 +102,13 @@ workflow DATA_PROCESSING {
     /* plot absolute log2 count vs absolute transformed count */
     ch_processed
         .filter{ it[3] == 'absolute' && it[5] == 'log2' }
-        .map{ it -> [ it[0..2], it[4], it[8], it[10] ].flatten() }
+        .map{ it -> [ it[0..2], it[8], it[10] ].flatten() }  
         .unique()
         .set{ ch_log2abs }  
     ch_log2abs
-        .combine( ch_rel, by:[0,1,2,3] ) 
-        .map{ it -> [ it[0..3], it[6..7], it[4], it[8], it[5]].flatten() }
-        .groupTuple( by:[0,1,2,3,6,8])
+        .combine( ch_rel, by:[0,1,2] )   // dataset, exp_sim, full, abslog_count, features, replace_zero, transf_data, refgene, normrel_count
+        .map{ it -> [ it[0..2], it[5..7], it[3], it[8], it[4]].flatten() }
+        .groupTuple( by:[0,1,2,6,8])
         .set{ ch2plot_log2abs_vs_rel }
     PLOT_LOG2ABS_VS_REL_TRANSF(ch2plot_log2abs_vs_rel)
 

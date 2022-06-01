@@ -11,10 +11,11 @@ parser$add_argument('--abs', type='character', help="Coefficients on log2 absolu
 parser$add_argument('--rel', type='character', help="Coefficients on transformed relative data")
 parser$add_argument('--features', type='character', help="List of gene names")
 parser$add_argument('--out', type='character', help="Output filename containing the metric")
-parser$add_argument('--filter', type='double', default=0.2, help="Keep only the pairs whose dropout <= filtering threshold. Default = 0.2")
+parser$add_argument('--filter', type='integer', default=20, help="Keep only the pairs whose dropout <= filtering threshold (in percentage). Default = 20")
 parser$add_argument('--method', type='character', help="Metric method. Choices: [pearson, spearman, kendall, rho]")
 parser = parser$parse_args()
 
+filter = parser$filter / 100
 
 parse_file <- function(filename){
     l = c()
@@ -70,9 +71,9 @@ if ( ncol(abs) != ncol(ori) ) stop("abs and ori matrices have different number o
 if ( ncol(abs) != length(features) ) stop("ncol(abs) != length(features)")
 
 # get dropout
-message('filtering genes that have dropout > ', parser$filter)
+message('filtering genes that have dropout > ', filter)
 dropout = colMeans(ori == 0)
-pos = which(dropout <= parser$filter)
+pos = which(dropout <= filter)
 abs = abs[pos, pos]
 rel = rel[pos, pos]
 abs = abs[lower.tri(abs)]

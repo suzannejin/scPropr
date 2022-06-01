@@ -14,12 +14,14 @@ parser$add_argument('--rel', type='character', help="Coefficients computed on re
 parser$add_argument('--features', type='character', help="List of gene names")
 parser$add_argument('--refgene', type='character', help="Reference gene name")
 parser$add_argument('--outdir', type='character', help="Output directory")
-parser$add_argument('--filter', type='double', default=0.2, help="Keep only the pairs whose dropout <= filtering threshold. Default = 0.2")
+parser$add_argument('--filter', type='integer', default=20, help="Keep only the pairs whose dropout <= filtering threshold (in percentage). Default = 20")
 parser$add_argument('--gm', action='store_true', help="Use geometric mean")
 parser$add_argument('--table', action='store_true', help="Save table into csv file")
 parser$add_argument('--npoint', type='integer', default=1e4, help="Number of points to plot")
 parser$add_argument('--seed', type='integer', default=0, help="Random seed. Default=0")
 parser = parser$parse_args()
+
+filter = parser$filter / 100
 
 calculate_geom_mean <-  function(x, y){
      df = data.frame(x,y)
@@ -73,7 +75,7 @@ comb = data.frame(
     var_rel_i = var_genes_rel[ind[,1]],
     var_rel_j = var_genes_rel[ind[,2]]
 )
-pos = which(comb[,'dropout_i'] <= parser$filter & comb[,'dropout_j'] <= parser$filter)
+pos = which(comb[,'dropout_i'] <= filter & comb[,'dropout_j'] <= filter)
 comb_filt = comb[pos,]
 if (nrow(comb) > parser$npoint){
      set.seed(parser$seed); pos = sample(c(1:nrow(comb)), size=parser$npoint)
@@ -130,7 +132,7 @@ g1 = ggplot(comb, aes_string(x='abs', y='rel', color='dropout')) +
      geom_abline(intercept = 0, slope = 1, linetype = 2, color="gray46") +
      xlab("On absolute data") +
      ylab("On relative data") +
-     scale_colour_viridis_c() +
+     scale_colour_viridis_c( limits=c(0,1) ) +
      theme(strip.text = element_text(size = 12)) 
 g2 = ggplot(comb, aes_string(x='abs', y='rel', color='var_abs')) +
      geom_point(alpha=.3, size=.5) + 
@@ -181,11 +183,11 @@ g3 = ggplot(comb_filt, aes_string(x='abs', y='rel', color='var_rel')) +
 g = ggarrange(g1, g2, g3, ncol=3)
 ggsave(
      g, 
-     filename=paste0(parser$outdir, '/log2abs-vs-rel-cor-colored-filtered', suf, '.png'), 
+     filename=paste0(parser$outdir, '/log2abs-vs-rel-cor-colored-filter', parser$filter, suf, '.png'), 
      width = 15, 
      height = 4
 )
-comb = comb[which(comb[,'dropout_i'] <= parser$filter & comb[,'dropout_j'] <= parser$filter),]
+comb = comb[which(comb[,'dropout_i'] <= filter & comb[,'dropout_j'] <= filter),]
 g1 = ggplot(comb, aes_string(x='abs', y='rel', color='dropout')) +
      geom_point(alpha=.1, size=.5) + 
      geom_abline(intercept = 0, slope = 1, linetype = 2, color="gray46") +
@@ -212,7 +214,7 @@ g3 = ggplot(comb, aes_string(x='abs', y='rel', color='var_rel')) +
 g = ggarrange(g1, g2, g3, ncol=3)
 ggsave(
      g, 
-     filename=paste0(parser$outdir, '/log2abs-vs-rel-cor-colored-filtered2', suf, '.png'), 
+     filename=paste0(parser$outdir, '/log2abs-vs-rel-cor-colored-filter', parser$filter, suf, '-2.png'), 
      width = 15, 
      height = 4
 )

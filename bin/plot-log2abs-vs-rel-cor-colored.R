@@ -13,11 +13,13 @@ parser$add_argument('--abs', type='character', nargs='+', help="Coefficients com
 parser$add_argument('--rel', type='character', nargs='+', help="Coefficients computed on relative data")
 parser$add_argument('--features', type='character', help="List of gene names")
 parser$add_argument('--color', type='character', default='dropout', help="Color by dropout or var. Default=dropout")
-parser$add_argument('--filter', type='double', default=0.2, help="Keep only the pairs whose dropout <= filtering threshold. Default = 0.2")
+parser$add_argument('--filter', type='integer', default=20, help="Keep only the pairs whose dropout <= filtering threshold (in percentage). Default = 20")
 parser$add_argument('--outdir', type='character', help="Output directory")
 parser$add_argument('--npoint', type='integer', default=1e4, help="Number of points to plot")
 parser$add_argument('--seed', type='integer', default=0, help="Random seed. Default=0")
 parser = parser$parse_args()
+
+filter = parser$filter / 100
 
 # functions
 parse_files <- function(files){
@@ -106,7 +108,7 @@ for (i in 1:length(parser$rel)){
         # var_rel_j = var_genes_rel2[ind[,2]]
     )
     
-    pos = which( df2[,'dropout_i'] <= parser$filter & df2[,'dropout_j'] <= parser$filter )
+    pos = which( df2[,'dropout_i'] <= filter & df2[,'dropout_j'] <= filter )
     if (length(pos) == 0) stop('please make the filtering less stringent')
     df2_filtered = df2[pos,]
     set.seed(parser$seed); pos = sample(c(1:nrow(df2)), size=parser$npoint)
@@ -153,7 +155,7 @@ g1 = ggplot(df, aes_string(x='abs', y='rel', color=parser$color)) +
     facet_wrap(~cor + transf, scales="free", nrow=nrow, ncol=ncol) +
     geom_point(alpha=.1, size=.5) + 
     geom_abline(intercept = 0, slope = 1, linetype = 2, color="gray46") +
-    scale_colour_viridis_c() +
+    scale_colour_viridis_c( limits=c(0, 1) ) +
     xlab("On absolute data") +
     ylab("On relative data") +
     theme(strip.text = element_text(size = 12))
@@ -195,14 +197,14 @@ ggsave(
 )
 message('saving colored and filtered figure')
 ggsave(
-    paste0(parser$outdir, '/log2abs-vs-rel-cor-colored-filtered.png'), 
+    paste0(parser$outdir, '/log2abs-vs-rel-cor-colored-filter', parser$filter, '.png'), 
     plot   = g3, 
     width  = width2,
     height = height2
 )
 message('saving black and filtered figure')
 ggsave(
-    paste0(parser$outdir, '/log2abs-vs-rel-cor-black-filtered.png'), 
+    paste0(parser$outdir, '/log2abs-vs-rel-cor-black-filter', parser$filter, '.png'), 
     plot   = g4, 
     width  = width2,
     height = height2

@@ -3,8 +3,8 @@
 process PLOT_ORIGINAL_VS_TRANSFORMED {
 
     container 'suzannejin/scpropr:plot'
-    tag "${dataset}-${exp_sim}-${full}-${abs_rel}_${method_replace_zero}"
-    publishDir "${params.outdir}/${dataset}/plot/original-vs-transformed/${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}", mode: params.publish_dir_mode
+    tag "${dataset}-${exp_sim}-${full}-${abs_rel}"
+    publishDir "${params.outdir}/${dataset}/plot/original-vs-transformed/${dataset}_${exp_sim}_${full}_${abs_rel}", mode: params.publish_dir_mode
 
     input:
     tuple val(dataset), 
@@ -20,10 +20,10 @@ process PLOT_ORIGINAL_VS_TRANSFORMED {
           file(transformed)
 
     output:
-    file "${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}.png"
-    file "${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logx.png"
-    file "${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logy.png"
-    file "${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logxy.png"
+    file "${dataset}_${exp_sim}_${full}_${abs_rel}.png"
+    file "${dataset}_${exp_sim}_${full}_${abs_rel}-logx.png"
+    file "${dataset}_${exp_sim}_${full}_${abs_rel}-logy.png"
+    file "${dataset}_${exp_sim}_${full}_${abs_rel}-logxy.png"
     file ".command.trace"
     file ".command.sh"
     file ".command.log"
@@ -32,37 +32,41 @@ process PLOT_ORIGINAL_VS_TRANSFORMED {
     params.do_plot_original_vs_transf
 
     script:
-    def methods = method_transform_data.join(' ')
-    def refgenes = refgene.join(' ')
-    def transformed2 = transformed.join(' ')
+    def methods_zero   = method_replace_zero.join(' ')
+    def methods_transf = method_transform_data.join(' ')
+    def refgenes       = refgene.join(' ')
+    def transformed2   = transformed.join(' ')
     """
     plot-original-vs-transformed.R \
         --original $original \
         --transformed $transformed2 \
-        --method $methods \
+        --method_zero $methods_zero \
+        --method_transf $methods_transf \
         --refgene $refgenes \
         --features $features \
         --outdir . \
-        --prefix ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}
+        --prefix ${dataset}_${exp_sim}_${full}_${abs_rel}
     """
 
     stub:
-    def methods = method_transform_data.join(' ')
-    def refgenes = refgene.join(' ')
-    def transformed2 = transformed.join(' ')
+    def methods_zero   = method_replace_zero.join(' ')
+    def methods_transf = method_transform_data.join(' ')
+    def refgenes       = refgene.join(' ')
+    def transformed2   = transformed.join(' ')
     """
     echo plot-original-vs-transformed.R \
         --original $original \
         --transformed $transformed2 \
-        --method $methods \
+        --method_zero $methods_zero \
+        --method_transf $methods_transf \
         --refgene $refgenes \
         --features $features \
         --outdir . \
-        --prefix ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}
-    touch ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}.png
-    touch ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logx.png
-    touch ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logy.png
-    touch ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logxy.png
+        --prefix ${dataset}_${exp_sim}_${full}_${abs_rel}
+    touch ${dataset}_${exp_sim}_${full}_${abs_rel}.png
+    touch ${dataset}_${exp_sim}_${full}_${abs_rel}-logx.png
+    touch ${dataset}_${exp_sim}_${full}_${abs_rel}-logy.png
+    touch ${dataset}_${exp_sim}_${full}_${abs_rel}-logxy.png
     """
 }
 
@@ -71,8 +75,8 @@ process PLOT_ORIGINAL_VS_TRANSFORMED {
 process PLOT_LOG_VS_TRANSFORMED {
 
     container 'suzannejin/scpropr:plot'
-    tag "${dataset}-${exp_sim}-${full}-${abs_rel}_${method_replace_zero}"
-    publishDir "${params.outdir}/${dataset}/plot/log-vs-transformed/${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}", mode: params.publish_dir_mode
+    tag "${dataset}-${exp_sim}-${full}-${abs_rel}"
+    publishDir "${params.outdir}/${dataset}/plot/log-vs-transformed/${dataset}_${exp_sim}_${full}_${abs_rel}", mode: params.publish_dir_mode
 
     input:
     tuple val(dataset), 
@@ -88,10 +92,10 @@ process PLOT_LOG_VS_TRANSFORMED {
           file(transformed)
 
     output:
-    path "${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}.png"
-    path "${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logx.png"
-    path "${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logy.png"
-    path "${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logxy.png"
+    path "${dataset}_${exp_sim}_${full}_${abs_rel}.png"
+    path "${dataset}_${exp_sim}_${full}_${abs_rel}-logx.png"
+    path "${dataset}_${exp_sim}_${full}_${abs_rel}-logy.png"
+    path "${dataset}_${exp_sim}_${full}_${abs_rel}-logxy.png"
     path ".command.trace"
     path ".command.sh"
     path ".command.log"
@@ -100,38 +104,42 @@ process PLOT_LOG_VS_TRANSFORMED {
     params.do_plot_log_vs_transf
 
     script:
-    def methods = method_transform_data.join(' ')
-    def refgenes = refgene.join(' ')
-    def transformed2 = transformed.join(' ')
+    def methods_zero   = method_replace_zero.join(' ')
+    def methods_transf = method_transform_data.join(' ')
+    def refgenes       = refgene.join(' ')
+    def transformed2   = transformed.join(' ')
     """
     plot-original-vs-transformed.R \
         --original $log2 \
         --transformed $transformed2 \
-        --method $methods \
+        --method_zero $methods_zero \
+        --method_transf $methods_transf \
         --refgene $refgenes \
         --features $features \
         --outdir . \
-        --prefix ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero} \
+        --prefix ${dataset}_${exp_sim}_${full}_${abs_rel} \
         --xlab log2
     """
 
     stub:
-    def methods = method_transform_data.join(' ')
-    def refgenes = refgene.join(' ')
-    def transformed2 = transformed.join(' ')
+    def methods_zero   = method_replace_zero.join(' ')
+    def methods_transf = method_transform_data.join(' ')
+    def refgenes       = refgene.join(' ')
+    def transformed2   = transformed.join(' ')
     """
     echo plot-original-vs-transformed.R \
         --original $log2 \
         --transformed $transformed2 \
-        --method $methods \
+        --method_zero $methods_zero \
+        --method_transf $methods_transf \
         --refgene $refgenes \
         --features $features \
         --outdir . \
-        --prefix ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero} \
+        --prefix ${dataset}_${exp_sim}_${full}_${abs_rel} \
         --xlab log2
-    touch ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}.png
-    touch ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logx.png
-    touch ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logy.png
-    touch ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logxy.png
+    touch ${dataset}_${exp_sim}_${full}_${abs_rel}.png
+    touch ${dataset}_${exp_sim}_${full}_${abs_rel}-logx.png
+    touch ${dataset}_${exp_sim}_${full}_${abs_rel}-logy.png
+    touch ${dataset}_${exp_sim}_${full}_${abs_rel}-logxy.png
     """
 }
