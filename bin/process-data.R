@@ -11,13 +11,13 @@ parser$add_argument('-o', '--output', type='character', help="Output count data,
 parser$add_argument('-o2', '--output2', type='character', help="Output size factor file")
 parser$add_argument('--lambda', type='character', help="Output file storing the lambda value used in entropy::freqs.shrink")
 parser$add_argument('--features', type='character')
-parser$add_argument('--method_zero', type='character', help="Zero handling method for clr and alr. Choices = [zcompositions, one, min, pseudocount]")
+parser$add_argument('--method_zero', type='character', help="Zero handling method for clr and alr. Choices = [zcompositions, one, min, pseudocount, pseudoproportion]")
 parser$add_argument('--method_transf', type='character', help="Transformation or normalization method. Choices = [log2, clr, alr, tmm, scran]")
 parser$add_argument('--refgene', type='character', help="Reference gene index. This is required to compute alr.")
 parser = parser$parse_args()
 
 # check arguments
-if (!is.null(parser$method_zero) && !( parser$method_zero %in% c("zcompositions", "one", "min", "pseudocount", "pseudocount2") )){
+if (!is.null(parser$method_zero) && !( parser$method_zero %in% c("zcompositions", "one", "min", "pseudocount", "pseudoproportion") )){
     stop("wrong zero replacement method - ", parser$method_zero)
 }
 if (!is.null(parser$method_transf) && !( parser$method_transf %in% c("log2", "clr", "alr", "tmm", "scran") )){
@@ -48,7 +48,7 @@ class(count)
 
 # functions -------------------------------------------------------------------
 
-replace_zero <- function(count, method=c("zcompositions", "one", "min", "pseudocount", "pseudocount2")){
+replace_zero <- function(count, method=c("zcompositions", "one", "min", "pseudocount", "pseudoproportion")){
 
     method = match.arg(method)
     if (!any(count==0, na.rm=T)) return(count)
@@ -75,15 +75,17 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min", "pseudoc
         count = count
         zeros = count == 0
         count[zeros] = min(count[!zeros])
+
     }else if (method == "pseudocount"){
+        count  = t(apply(t(count), 2, shrinkc))
+        
+    }else if (method == "pseudoproportion"){
         require(entropy)
         out    = as.matrix(freqs.shrink(count))
         count  = as.data.frame(out)
         lambda = attributes(out)$lambda.freqs
     }
-    else if (method == "pseudocount2"){
-        count  = t(apply(t(count), 2, shrinkc))
-    }
+    
 
     # TODO add scImpute, etc zero handling methods for single cell
 

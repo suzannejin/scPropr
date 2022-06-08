@@ -37,7 +37,7 @@ process PROCESS_DATA {
 
     when:
     if (!params.do_transform_abs && abs_rel == 'absolute'){
-        if (method_replace_zero == 'NA' && method_transform_data == 'log2' && refgene == 'NA'){true}
+        if (method_transform_data == 'log2' && refgene == 'NA'){true}
     }else{
         if (method_replace_zero == 'NA' && method_transform_data in ['log2','tmm','scran'] && refgene == 'NA'){true}
         else if (method_replace_zero != 'NA' && method_transform_data == 'clr' && refgene == 'NA' && full == 'full'){true}

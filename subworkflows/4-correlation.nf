@@ -63,18 +63,18 @@ workflow CORRELATION {
         .set{ ch_ori }
     ch_cor
         .filter{ it[3] == 'relative' }
-        .map{ it -> [ it[0..2], it[7], it[4..6], it[8] ].flatten() }
+        .map{ it -> [ it[0..2], it[4], it[7], it[5..6], it[8] ].flatten() }
         .unique()
         .set{ ch_rel2 } 
     ch_cor
         .filter { it[3] == 'absolute' && it[5] == 'log2' }
-        .map{ it -> [ it[0..2], it[7..9] ].flatten() } 
+        .map{ it -> [ it[0..2], it[4], it[7..9] ].flatten() } 
         .unique()
         .set{ ch_log2abs }  
     ch_log2abs
-        .combine( ch_rel2, by:[0,1,2,3] )   
-        .map{ it -> [ it[0..2], it[6..8], it[3], it[4], it[9], it[5] ].flatten() }
-        .groupTuple( by:[0,1,2,6] )
+        .combine( ch_rel2, by:[0,1,2,3,4] )   
+        .map{ it -> [ it[0..3], it[7..8] , it[4], it[5], it[9], it[6] ].flatten() }
+        .groupTuple( by:[0,1,2,3,6] )
         .map{ it -> [
             it[0], 
             it[1],
@@ -99,8 +99,8 @@ workflow CORRELATION {
 
     /* TODO compute metric */
     ch_log2abs
-        .combine( ch_rel2, by:[0,1,2,3] )
-        .map{ it -> [ it[0..2], it[6..8], it[3], it[4], it[9], it[5] ].flatten() }
+        .combine( ch_rel2, by:[0,1,2,3,4] )
+        .map{ it -> [ it[0..3], it[7..8] , it[4], it[5], it[9], it[6] ].flatten() }
         .combine( ch_ori, by:[0,1,2])
         .set{ ch2evaluate_log2abs_vs_rel }   // dataset, exp_sim, full, method_replace_zero, method_transf_zero, refgene, method_cor, log2abs matrix, rel matrix, features, ori
     EVALUATE_LOG2ABS_VS_REL_COR(

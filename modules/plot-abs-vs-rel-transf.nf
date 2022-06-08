@@ -63,8 +63,8 @@ process PLOT_ABS_VS_REL_TRANSF {
 process PLOT_LOG2ABS_VS_REL_TRANSF {
     
     container 'suzannejin/scpropr:plot'
-    tag "${dataset}-${exp_sim}-${full}"
-    publishDir "${params.outdir}/${dataset}/plot/log2abs-vs-rel-transf/${dataset}_${exp_sim}_${full}", mode: params.publish_dir_mode
+    tag "${dataset}-${exp_sim}-${full}-${method_replace_zero}"
+    publishDir "${params.outdir}/${dataset}/plot/log2abs-vs-rel-transf/${dataset}_${exp_sim}_${full}_${method_replace_zero}", mode: params.publish_dir_mode
 
     input:
     tuple val(dataset), 
@@ -78,7 +78,7 @@ process PLOT_LOG2ABS_VS_REL_TRANSF {
           file(features)
 
     output:
-    file "${dataset}_${exp_sim}_${full}.png"
+    file "${dataset}_${exp_sim}_${full}_${method_replace_zero}.png"
     file ".command.trace"
     file ".command.sh"
     file ".command.log"
@@ -100,7 +100,7 @@ process PLOT_LOG2ABS_VS_REL_TRANSF {
         --method_transf $methods_transf \
         --refgene $refgenes \
         --features $features \
-        --output ${dataset}_${exp_sim}_${full}.png
+        --output ${dataset}_${exp_sim}_${full}_${method_replace_zero}.png
     """
 
     stub:
@@ -117,7 +117,7 @@ process PLOT_LOG2ABS_VS_REL_TRANSF {
         --method_transf $methods_transf \
         --refgene $refgenes \
         --features $features \
-        --output ${dataset}_${exp_sim}_${full}.png
-    touch ${dataset}_${exp_sim}_${full}.png
+        --output ${dataset}_${exp_sim}_${full}_${method_replace_zero}.png
+    touch ${dataset}_${exp_sim}_${full}_${method_replace_zero}.png
     """
 }

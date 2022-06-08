@@ -69,8 +69,8 @@ process PLOT_ABS_VS_REL_COR {
 process PLOT_LOG2ABS_VS_REL_COR_COLORED {
     label 'process_shigh'
     container 'suzannejin/scpropr:plot'
-    tag "${dataset}-${exp_sim}-${full}-${color}-seed${params.random_seed}"
-    publishDir "${params.outdir}/${dataset}/plot/log2abs-vs-rel-cor-colored/${dataset}_${exp_sim}_${full}_${method_cor}_${color}_seed${params.random_seed}", mode: params.publish_dir_mode 
+    tag "${dataset}-${exp_sim}-${full}-${method_replace_zero}-${method_cor}-${color}-seed${params.random_seed}"
+    publishDir "${params.outdir}/${dataset}/plot/log2abs-vs-rel-cor-colored/${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_cor}_${color}_seed${params.random_seed}", mode: params.publish_dir_mode 
 
     input:
     tuple val(dataset), 
