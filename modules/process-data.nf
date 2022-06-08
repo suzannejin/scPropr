@@ -100,7 +100,7 @@ process PROCESS_DATA {
     }else{
         def ref_gene_cml = refgene == 'NA' ? " " : "--refgene $refgene" 
         """
-        process-data-nozero.R \
+        echo process-data-nozero.R \
             -i $count \
             -o ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}_${method_transform_data}_${refgene}.csv.gz \
             -o2 ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}_${method_transform_data}_${refgene}.list \

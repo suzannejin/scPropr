@@ -109,6 +109,56 @@ process SELECT_NOZERO_GENES {
     """
 }
 
+process GET_REDUCED_DATASET {
+
+    label 'process_low_short'
+    container 'suzannejin/scpropr:propr'
+    tag "$dataset-$exp_sim"
+
+    input:
+    tuple val(dataset),
+          val(exp_sim),
+          val(full),
+          val(abs_rel),
+          path(count),
+          path(features),
+          path(barcodes)
+
+    output:
+    tuple val(dataset),
+          val(exp_sim),
+          val('nozero'),
+          val(abs_rel),
+          path("${dataset}_${exp_sim}_nozero_${abs_rel}.csv.gz"),
+          path("${dataset}_${exp_sim}_nozero_features.csv"),
+          path("${dataset}_${exp_sim}_nozero_barcodes.csv")
+    
+    script:
+    """
+    get-reduced-dataset.R \
+        -i $count \
+        -f $features \
+        -b $barcodes \
+        -o ${dataset}_${exp_sim}_nozero_${abs_rel}.csv.gz \
+        -o2 ${dataset}_${exp_sim}_nozero_features.csv \
+        -o3 ${dataset}_${exp_sim}_nozero_barcodes.csv 
+    """
+
+    stub:
+    """
+    echo get-reduced-dataset.R \
+        -i $count \
+        -f $features \
+        -b $barcodes \
+        -o ${dataset}_${exp_sim}_nozero_${abs_rel}.csv.gz \
+        -o2 ${dataset}_${exp_sim}_nozero_features.csv \
+        -o3 ${dataset}_${exp_sim}_nozero_barcodes.csv 
+    touch ${dataset}_${exp_sim}_nozero_${abs_rel}.csv.gz
+    touch ${dataset}_${exp_sim}_nozero_features.csv
+    touch ${dataset}_${exp_sim}_nozero_barcodes.csv
+    """
+}
+
 process EXP_NOZERO_GENES_2_SELECT {
 
     label 'process_low_short'

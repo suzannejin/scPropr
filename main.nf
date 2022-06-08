@@ -34,7 +34,7 @@ ch_count
 ///////////////////////////////////////////////////////////////
 
 // modules
-include { SELECT_NOZERO_GENES } from "${launchDir}/modules/select-data.nf"
+include { GET_REDUCED_DATASET } from "${launchDir}/modules/select-data.nf"
 include { GET_RELATIVE } from "${launchDir}/modules/get-relative.nf"
 
 // subworkflows
@@ -72,9 +72,9 @@ workflow {
 
     /* module: get non-zero gene datasets */
     if (params.do_nozero_genes){
-        SELECT_NOZERO_GENES( ch_input )
+        GET_REDUCED_DATASET( ch_input )
         ch_input
-            .mix( SELECT_NOZERO_GENES.out )
+            .mix( GET_REDUCED_DATASET.out )
             .set{ ch_input }
     }
 
