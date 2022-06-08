@@ -9,24 +9,15 @@ parser = ArgumentParser(description='Transform and normalize count data. Also sa
 parser$add_argument('-i', '--input', type='character', help="Input count data")
 parser$add_argument('-o', '--output', type='character', help="Output count data, if required")
 parser$add_argument('-o2', '--output2', type='character', help="Output size factor file")
-parser$add_argument('--lambda', type='character', help="Output file storing the lambda value used in entropy::freqs.shrink")
 parser$add_argument('--features', type='character')
-parser$add_argument('--method_zero', type='character', help="Zero handling method for clr and alr. Choices = [zcompositions, one, min, pseudocount]")
 parser$add_argument('--method_transf', type='character', help="Transformation or normalization method. Choices = [log2, clr, alr, tmm, scran]")
 parser$add_argument('--refgene', type='character', help="Reference gene index. This is required to compute alr.")
 parser = parser$parse_args()
 
 # check arguments
-if (!is.null(parser$method_zero) && !( parser$method_zero %in% c("zcompositions", "one", "min", "pseudocount", "pseudocount2") )){
-    stop("wrong zero replacement method - ", parser$method_zero)
-}
 if (!is.null(parser$method_transf) && !( parser$method_transf %in% c("log2", "clr", "alr", "tmm", "scran") )){
     stop("wrong transformation or normalization method - ", parser$method_transf)
 }
-if (parser$method_transf %in% c('clr','alr') && is.null(parser$lambda)){
-    stop("please provide output filename for lambda")
-}
-
 
 # read and process data --------------------------------------------------------
 
@@ -41,105 +32,35 @@ if (!is.null(parser$refgene)){
 
 # count dropout
 dropout = round(mean(count==0, na.rm=T), 3)
-print(paste0("dropout: ", dropout))
+if (any(count == 0)){
+    print(paste0("dropout: ", dropout))
+}
 dim(count)
 class(count)
 
 
 # functions -------------------------------------------------------------------
 
-replace_zero <- function(count, method=c("zcompositions", "one", "min", "pseudocount", "pseudocount2")){
-
-    method = match.arg(method)
-    if (!any(count==0, na.rm=T)) return(count)
-    message("replacing zeros with method ", method)
-    lambda = NA
-
-    # replace zero
-    if (method == "zcompositions"){
-        require(zCompositions)
-        pars = as.character(formals(cmultRepl)$output)
-        if ("p-counts" %in% pars){
-            par = "p-counts"
-        }else if ("counts" %in% pars){
-            par = "counts"
-        }else{
-            stop("wrong output parameter for zCompositions")
-        }
-        count = cmultRepl(count, method="CZM", label=0, output=par)
-
-    }else if (method == "one"){
-        count[count == 0] = 1
-
-    }else if (method == "min"){
-        count = count
-        zeros = count == 0
-        count[zeros] = min(count[!zeros])
-    }else if (method == "pseudocount"){
-        require(entropy)
-        out    = as.matrix(freqs.shrink(count))
-        count  = as.data.frame(out)
-        lambda = attributes(out)$lambda.freqs
-    }
-    else if (method == "pseudocount2"){
-        count  = t(apply(t(count), 2, shrinkc))
-    }
-
-    # TODO add scImpute, etc zero handling methods for single cell
-
-    # check zeros and negative values
-    if(any(count<=0, na.rm=T)) stop("counts matrix contain zero and/or negative values")
-
-    return(list(count, lambda))
-}
-
 calculate_geom_mean <-  function(count){
     gm = apply( count, 1, function(x) exp(mean(log(x[x!=0]))) )
     return(gm)
 }
 
-shrinkc <- function(n){
-        N=sum(n)
-        q=n/N       
-        D=length(n)
-        T=rep(1/D,D)
-        
-        l=(1-sum(q^2))/((N-1)*sum((T-q)^2))
-        if (l<0){
-            l=0
-        }
-        if(l>1){
-            l=1
-        }
-        
-        a=N/D*l/(1-l) 
-        ns=n+a
-        
-        return(ns)
-}
-
 
 # transform/normalize data --------------------------------------------------------------
 
-lambda = NA
 if (parser$method_transf == 'log2'){
     message("log2-transforming data")
-    count = log2(count + 1)
+    count = log2(count)
 
 }else if (parser$method_transf == 'alr'){
     message("alr-transforming data")
-    out    = replace_zero(count, parser$method_zero)
-    count  = out[[1]]
-    lambda = out[[2]]
     size.factor = count[,nrefgene]
     count  = count[,-nrefgene] / size.factor 
     count  = log(count)
 
 }else if (parser$method_transf == 'clr'){
     message("clr-transforming data")
-    out    = replace_zero(count, parser$method_zero)
-    count  = out[[1]]
-    lambda = out[[2]]
     size.factor = calculate_geom_mean(count)
     count  = count / size.factor
     count  = log(count)
@@ -152,9 +73,7 @@ if (parser$method_transf == 'log2'){
     y           = calcNormFactors(y, method="TMM")
     size.factor = y$samples$norm.factors
     eff.libsize = y$samples$lib.size * size.factor
-    adj.prior   = 1 * eff.libsize / mean(eff.libsize)
-    adj.libsize = eff.libsize + 2 * adj.prior
-    count       = (t(count) + adj.prior) / adj.libsize * 1e6  ## note that adj.prior has length libsize, therefore you should be careful when transposing and making matrix calculations
+    count       = (t(count)) / eff.libsize * 1e6  
     count       = log2(count)
 
 }else if (parser$method_transf == 'scran'){
@@ -168,7 +87,7 @@ if (parser$method_transf == 'log2'){
     sce         = computeSumFactors(sce, clusters=clusters)  
     size.factor = sce@colData@listData$sizeFactor
     count       = t(count) / size.factor
-    count       = log2(count + 1)
+    count       = log2(count)
 
 }else{
     stop("make sure you introduced the correct processing methods")
@@ -187,6 +106,3 @@ if (parser$method_transf != 'log2') {
 } else {
     file.create(parser$output2)
 }
-
-# store lambda file
-cat(lambda, file=parser$lambda)

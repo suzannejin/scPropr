@@ -34,8 +34,8 @@ ch_count
 ///////////////////////////////////////////////////////////////
 
 // modules
-include { SELECT_NOZERO_GENES; EXP_NOZERO_GENES_2_SELECT } from "${launchDir}/modules/select-data.nf"
-include { GET_RELATIVE; GET_RELATIVE_FOR_PLOT } from "${launchDir}/modules/get-relative.nf"
+include { SELECT_NOZERO_GENES } from "${launchDir}/modules/select-data.nf"
+include { GET_RELATIVE } from "${launchDir}/modules/get-relative.nf"
 
 // subworkflows
 include { DATA_SIMULATION     } from "${launchDir}/subworkflows/1-data_simulation.nf"
@@ -72,26 +72,9 @@ workflow {
 
     /* module: get non-zero gene datasets */
     if (params.do_nozero_genes){
-        // select non zero genes in full experimental data
-        SELECT_NOZERO_GENES(
-            ch_input.filter{ it[1] == 'experimental' }
-        )
+        SELECT_NOZERO_GENES( ch_input )
         ch_input
             .mix( SELECT_NOZERO_GENES.out )
-            .set{ ch_input }
-        // do the same for the other dataset following this non zero gene set
-        // thus all the different data types will have the same gene set (eg. simulated data with different seq depth), so that they can be comparable
-        // TODO try to filter the genes independently. The gene sets should not be too different...
-        ch_input
-            .filter{ it[1] != 'experimental' }
-            .combine(
-                SELECT_NOZERO_GENES.out.map{ it -> [ it[0], it[5] ] }.unique(),
-                by: 0
-            )
-            .set{ ch_input2select }
-        EXP_NOZERO_GENES_2_SELECT( ch_input2select )
-        ch_input
-            .mix( EXP_NOZERO_GENES_2_SELECT.out )
             .set{ ch_input }
     }
 

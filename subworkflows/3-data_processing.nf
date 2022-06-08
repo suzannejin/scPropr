@@ -54,7 +54,7 @@ workflow DATA_PROCESSING {
 
     /* scatter plot original count data vs processed count data */
     ch_processed2
-        .groupTuple( by:[0,1,2,3,4,7,8,9] )
+        .groupTuple( by:[0,1,2,3,7,8,9] )
         .set{ ch2plot_original_vs_transformed }
     PLOT_ORIGINAL_VS_TRANSFORMED(ch2plot_original_vs_transformed)
 

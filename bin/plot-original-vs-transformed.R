@@ -34,9 +34,11 @@ get_df <- function(original, transformed, method, nrefgene, npoint){
     if ( (nrow(original) != nrow(transformed)) || (ncol(original) != ncol(transformed)) ) { stop("original and transformed matrices have different dimensiones") }
     original    = as.vector(original)
     transformed = as.vector(transformed)
-    set.seed(0); pos = sample(c(1:length(original)), size=npoint)
-    original    = original[pos]
-    transformed = transformed[pos]
+    if (length(original) > npoint){
+        set.seed(0); pos = sample(c(1:length(original)), size=npoint)
+        original    = original[pos]
+        transformed = transformed[pos]
+    }
     df = data.frame(
         original    = original,
         transformed = transformed,

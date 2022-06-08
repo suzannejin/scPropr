@@ -36,9 +36,11 @@ for (i in 1:length(parser$method_transf)){
     if( length(x) != length(y) ) stop("length abs != length rel")
 
     # random sample
-    set.seed(0); pos = sample(c(1:length(x)), parser$npoint)
-    x = x[pos]
-    y = y[pos]
+    if (length(x) > parser$npoint){
+        set.seed(0); pos = sample(c(1:length(x)), parser$npoint)
+        x = x[pos]
+        y = y[pos]
+    }
     
     # update data frame
     method  = paste0(parser$method_zero[i], ' - ', parser$method_transf[i], ' - ', parser$refgene[i])

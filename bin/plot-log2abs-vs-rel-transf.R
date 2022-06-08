@@ -10,7 +10,8 @@ library(ggpubr)
 parser = ArgumentParser(description='Compare transformed count on relative vs absolute data.')
 parser$add_argument('--abs', type='character', help="log2 absolute data")
 parser$add_argument('--rel', type='character', nargs='+', help="Transformed count on relative data")
-parser$add_argument('--method', type='character', nargs='+', help="Transformation method names")
+parser$add_argument('--method_zero', type='character', nargs='+', help="Zero handling method names")
+parser$add_argument('--method_transf', type='character', nargs='+', help="Transformation method names")
 parser$add_argument('--refgene', type='character', nargs='+', help="Reference gene names")
 parser$add_argument('--features', type='character', help="List of gene names")
 parser$add_argument('--output', type='character', help="Output figure filename")
@@ -30,9 +31,11 @@ get_df <- function(abs, rel, method, nrefgene, npoint){
     if ( (nrow(abs) != nrow(rel)) || (ncol(abs) != ncol(rel)) ) { stop("abs and rel matrices have different dimensiones") }
     abs = as.vector(abs)
     rel = as.vector(rel)
-    set.seed(0); pos = sample(c(1:length(abs)), size=npoint)
-    abs = abs[pos]
-    rel = rel[pos]
+    if (length(abs) > npoint){
+        set.seed(0); pos = sample(c(1:length(abs)), size=npoint)
+        abs = abs[pos]
+        rel = rel[pos]
+    }
     df  = data.frame(
         abs    = abs,
         rel    = rel,
@@ -48,12 +51,11 @@ for (i in 1:length(parser$rel)){
     if ( is.na(parser$refgene[i]) || parser$refgene[i] == 'NA' ) {
         refgene  = ''
         nrefgene = NA
-        method   = parser$method[i]
     } else {
         refgene  = parser$refgene[i]
         nrefgene = which(features == refgene)
-        method   = paste0(parser$method[i], ' - ', refgene)
     }
+    method = paste0(parser$method_zero[i], ' - ', parser$method_transf[i], ' - ', parser$refgene[i])
     tmp = get_df(parser$abs, parser$rel[i], method, nrefgene, parser$npoint)
     df  = rbind(df, tmp)
 }

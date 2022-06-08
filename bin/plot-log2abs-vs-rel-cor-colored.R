@@ -25,6 +25,7 @@ filter = parser$filter / 100
 parse_files <- function(files){
     l = list(
         name   = c(),
+        zero   = c(),
         transf = c(),
         ref    = c(),
         cor    = c(),
@@ -34,11 +35,13 @@ parse_files <- function(files){
         file    = files[i]
         base    = sub('\\.csv.gz', '', file)
         base    = strsplit(base, split='_')[[1]]
+        zero    = base[5]
         transf  = base[6]
         refgene = base[7]
         cor     = base[8]
         if (refgene == "NA"){ transf = transf; refgene = NA } else { transf = paste0(transf, ' - ', refgene) }
-        l$name[i]   = paste0(transf, ' - ', cor)
+        l$name[i]   = paste0(zero, ' - ', transf, ' - ', cor)
+        l$zero[i]   = zero
         l$transf[i] = transf
         l$ref[i]    = refgene
         l$cor[i]    = cor
@@ -87,13 +90,15 @@ for (i in 1:length(parser$rel)){
         # var_genes_abs2 = var_genes_abs
         # var_genes_rel2 = var_genes_rel
     }
-    xpos = which( abs_l$name == paste0('log2 - ', rel_l$cor[i]) )
+    xpos = which( abs_l$name == paste0('NA - log2 - ', rel_l$cor[i]) )
     abs    = get_mat(abs_l$file[xpos], nrefgene)
     rel    = get_mat(rel_l$file[i], NA)
     if ( (nrow(abs) != nrow(rel)) || (ncol(abs) != ncol(rel)) ) stop("abs and rel matrices have different dimensions") 
     if ( length(features2) != ncol(abs) ) stop("length(features) != ncol(abs)")
     ind  = which( upper.tri(abs, diag=F) , arr.ind = TRUE )
     df2  = data.frame(
+        name      = rel_l$name[i],
+        zero      = rel_l$zero[i],
         transf    = rel_l$transf[i],
         cor       = rel_l$cor[i],
         i         = features2[ind[,1]],
@@ -111,13 +116,15 @@ for (i in 1:length(parser$rel)){
     pos = which( df2[,'dropout_i'] <= filter & df2[,'dropout_j'] <= filter )
     if (length(pos) == 0) stop('please make the filtering less stringent')
     df2_filtered = df2[pos,]
-    set.seed(parser$seed); pos = sample(c(1:nrow(df2)), size=parser$npoint)
-    df2 = df2[pos,]
-    df  = rbind(df, df2)
-    if ( nrow(df) < parser$npoint ){
-        set.seed(parser$seed); pos = sample(c(1:nrow(df2_filtered)), size=parser$npoint)
+    if (nrow(df2) > parser$npoint ){
+        set.seed(parser$seed); pos = sample(c(1:nrow(df2)), size=parser$npoint)
+        df2 = df2[pos,]
     }
-    df2_filtered = df2_filtered[pos,]
+    df  = rbind(df, df2)
+    if ( nrow(df2_filtered) > parser$npoint ){
+        set.seed(parser$seed); pos = sample(c(1:nrow(df2_filtered)), size=parser$npoint)
+        df2_filtered = df2_filtered[pos,]
+    }
     df_filtered  = rbind(df_filtered, df2_filtered)
 }
 df[,'dropout'] = rowMeans( data.frame(df[,'dropout_i'], df[,'dropout_j']) )
@@ -140,19 +147,19 @@ rm(dropout)
 # rm(var_genes_rel)
 
 # set figure size
-ncol    = length( unique(df$transf) )
-nrow    = length( unique(df$cor) )
+ncol    = length( unique(df$name) )
+nrow    = 1
 width   = 3 * ncol
 height  = 3 * nrow
-ncol2   = length( unique(df_filtered$transf) )
-nrow2   = length( unique(df_filtered$cor) )
+ncol2   = length( unique(df_filtered$name) )
+nrow2   = 1
 width2  = 3 * ncol2
 height2 = 3 * nrow2
 
 # plot abs vs relative
 message('plotting figure')
 g1 = ggplot(df, aes_string(x='abs', y='rel', color=parser$color)) +
-    facet_wrap(~cor + transf, scales="free", nrow=nrow, ncol=ncol) +
+    facet_wrap(~name, scales="free", nrow=nrow, ncol=ncol) +
     geom_point(alpha=.1, size=.5) + 
     geom_abline(intercept = 0, slope = 1, linetype = 2, color="gray46") +
     scale_colour_viridis_c( limits=c(0, 1) ) +
@@ -160,14 +167,14 @@ g1 = ggplot(df, aes_string(x='abs', y='rel', color=parser$color)) +
     ylab("On relative data") +
     theme(strip.text = element_text(size = 12))
 g2 = ggplot(df, aes_string(x='abs', y='rel')) +
-    facet_wrap(~cor + transf, scales="free", nrow=nrow, ncol=ncol) +
+    facet_wrap(~name, scales="free", nrow=nrow, ncol=ncol) +
     geom_point(alpha=.1, size=.5) + 
     geom_abline(intercept = 0, slope = 1, linetype = 2, color="gray46") +
     xlab("On absolute data") +
     ylab("On relative data") +
     theme(strip.text = element_text(size = 12))
 g3 = ggplot(df_filtered, aes_string(x='abs', y='rel', color=parser$color)) +
-    facet_wrap(~cor + transf, scales="free", nrow=nrow2, ncol=ncol2) +
+    facet_wrap(~name, scales="free", nrow=nrow2, ncol=ncol2) +
     geom_point(alpha=.1, size=.5) + 
     geom_abline(intercept = 0, slope = 1, linetype = 2, color="gray46") +
     scale_colour_viridis_c() +
@@ -175,7 +182,7 @@ g3 = ggplot(df_filtered, aes_string(x='abs', y='rel', color=parser$color)) +
     ylab("On relative data") +
     theme(strip.text = element_text(size = 12))
 g4 = ggplot(df_filtered, aes_string(x='abs', y='rel')) +
-    facet_wrap(~cor + transf, scales="free", nrow=nrow2, ncol=ncol2) +
+    facet_wrap(~name, scales="free", nrow=nrow2, ncol=ncol2) +
     geom_point(alpha=.1, size=.5) + 
     geom_abline(intercept = 0, slope = 1, linetype = 2, color="gray46") +
     xlab("On absolute data") +
