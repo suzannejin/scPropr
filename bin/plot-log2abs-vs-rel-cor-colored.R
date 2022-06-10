@@ -90,7 +90,7 @@ for (i in 1:length(parser$rel)){
         # var_genes_abs2 = var_genes_abs
         # var_genes_rel2 = var_genes_rel
     }
-    xpos = which( abs_l$name == paste0('NA - log2 - ', rel_l$cor[i]) )
+    xpos = which( abs_l$name == paste0(rel_l$zero[i], ' - log2 - ', rel_l$cor[i]) )
     abs    = get_mat(abs_l$file[xpos], nrefgene)
     rel    = get_mat(rel_l$file[i], NA)
     if ( (nrow(abs) != nrow(rel)) || (ncol(abs) != ncol(rel)) ) stop("abs and rel matrices have different dimensions") 
