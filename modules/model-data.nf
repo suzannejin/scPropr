@@ -6,7 +6,7 @@ process MODEL_DATA {
     label 'process_high_long'
     container 'suzannejin/scpropr:simulate'
     tag "${dataset}-${exp_sim}"
-    storeDir "${params.outdir}/${dataset}/model/${exp_sim}"
+    storeDir "${params.datadir}/model/${dataset}/${exp_sim}"
     // publishDir "${params.outdir}/${dataset}/model", mode: params.publish_dir_mode
     // TODO be able to model based on different homogeneous populations
     // for this I need to change the entire pipeline, to add another variable 'population'

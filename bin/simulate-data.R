@@ -12,7 +12,8 @@ parser$add_argument('model', type='character', help="Model")
 parser$add_argument('output', type='character', help="Output simulated count data")
 parser$add_argument('--slope', type='integer', help="Slope of sequencing depth")
 parser$add_argument('--ndata', type='integer', help="Number of simulations for a given slope")
-parser$add_argument('--cell_factor', type='double', help="define ratio = (ncell simulated data) / (ncell original data)")
+parser$add_argument('--cell_factor', type='double', default=1, help="define ratio = (ncell simulated data) / (ncell original data)")
+parser$add_argument('--depth_factor', type='double', default=1, help="define ratio = (seq depth simulated data) / (seq depth original data)")
 parser = parser$parse_args()
 
 # functions -----------------------------------------------------------------------------
@@ -37,7 +38,7 @@ message("loading model with [nread:", model$n_read, "][ncell:", model$n_cell, "]
 
 # calculate
 seqdepth = get_seqdepth(parser$slope, parser$ndata)
-nreads   = model$n_read * seqdepth
+nreads   = model$n_read * seqdepth * parser$depth_factor
 ncells   = rep( model$n_cell, length(seqdepth) ) / parser$ndata
 ncells   = ncells * parser$cell_factor   # TODO think better how we should deal with cell_factor change. Should I also modify the seqdepth, when less cells or so? 
 

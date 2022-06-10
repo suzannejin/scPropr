@@ -60,6 +60,7 @@ workflow {
             params.simulation_slope,
             params.simulation_ndata,
             params.simulation_cell_factor,
+            params.simulation_depth_factor,
             params.do_simulation
         )  
         ch_input
@@ -71,7 +72,7 @@ workflow {
     // since the simulated datasets might have high zero percentage..
 
     /* module: get non-zero gene datasets */
-    if (params.do_nozero_genes){
+    if ( params.do_nozero_genes ){
         GET_REDUCED_DATASET( ch_input )
         ch_input
             .mix( GET_REDUCED_DATASET.out )
@@ -87,28 +88,32 @@ workflow {
 
     /* subworkflow: plot basic figures for experimental and simulated data */
     // TODO also compute data exploration plots for transformed data
-    if (params.do_plot_data_exploration){
+    if ( params.do_plot_data_exploration ){
         DATA_EXPLORATION( ch_input )  
     }
 
 
     /* subworkflow: data processing */
     ch_ori = ch_input
-    DATA_PROCESSING(
-        ch_input,
-        params.method_replace_zero.plus('NA'),
-        params.method_transform_data,
-        params.refgenes.plus('NA')
-    )
+    if ( params.do_data_processing ){
+        DATA_PROCESSING(
+            ch_input,
+            params.method_replace_zero.plus('NA'),
+            params.method_transform_data,
+            params.refgenes.plus('NA')
+        )
+    }
 
     /* subworkflow: compute correlation */
-    CORRELATION(
-        DATA_PROCESSING.out,
-        ch_ori,
-        params.method_correlation.tokenize(','),
-        params.method_evaluation.tokenize(','),
-        params.scatter_colorby
-    )
+    if ( params.do_correlation ){
+        CORRELATION(
+            DATA_PROCESSING.out,
+            ch_ori,
+            params.method_correlation.tokenize(','),
+            params.method_evaluation.tokenize(','),
+            params.scatter_colorby
+        )
+    }
 
     // TODO plot scatter vs index, colored by reference gene
 }

@@ -141,7 +141,9 @@ process GET_REDUCED_DATASET {
         -b $barcodes \
         -o ${dataset}_${exp_sim}_nozero_${abs_rel}.csv.gz \
         -o2 ${dataset}_${exp_sim}_nozero_features.csv \
-        -o3 ${dataset}_${exp_sim}_nozero_barcodes.csv 
+        -o3 ${dataset}_${exp_sim}_nozero_barcodes.csv \
+        --ncell 1100 \
+        --ngene 1100
     """
 
     stub:
@@ -152,7 +154,9 @@ process GET_REDUCED_DATASET {
         -b $barcodes \
         -o ${dataset}_${exp_sim}_nozero_${abs_rel}.csv.gz \
         -o2 ${dataset}_${exp_sim}_nozero_features.csv \
-        -o3 ${dataset}_${exp_sim}_nozero_barcodes.csv 
+        -o3 ${dataset}_${exp_sim}_nozero_barcodes.csv \
+        --ncell 1100 \
+        --ngene 1100
     touch ${dataset}_${exp_sim}_nozero_${abs_rel}.csv.gz
     touch ${dataset}_${exp_sim}_nozero_features.csv
     touch ${dataset}_${exp_sim}_nozero_barcodes.csv

@@ -15,6 +15,7 @@ parser$add_argument('--filter_gene', type='double', help="Remove the genes with 
 parser$add_argument('--filter_cell', type='double', help="Remove the cells with dropout > threshold")
 parser$add_argument('--select_gene', type='character', help="File specifying the genes to be used")
 parser$add_argument('--select_cell', type='character', help="File specifying the cells to be used")
+parser$add_argument('--ncell', type='character', help="Number of cells wanted")
 parser = parser$parse_args()
 
 # read input count data
@@ -51,6 +52,13 @@ if (!is.null(parser$select_cell)){
     message("select cells from ", parser$select_cell)
     tmp      = fread(parser$select_cell, header=F)$V1
     pos      = which(barcodes %in% tmp)
+    count    = count[pos,]
+    barcodes = barcodes[pos]
+}
+# specific number of cells
+if (!is.null(parser$ncell)){
+    message("get only ", parser$ncell, " cells")
+    set.seed(0); pos = sample(1:nrow(count), parser$ncell)
     count    = count[pos,]
     barcodes = barcodes[pos]
 }

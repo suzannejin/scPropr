@@ -16,6 +16,7 @@ workflow DATA_SIMULATION {
     slope
     ndata
     cell_factor
+    depth_factor
     do_simulation
 
     main:
@@ -37,7 +38,7 @@ workflow DATA_SIMULATION {
     
     /* simulate data */
     ch_simulated = Channel.empty()
-    SIMULATE_DATA(ch_model2simulation, slope, ndata, cell_factor)
+    SIMULATE_DATA(ch_model2simulation, slope, ndata, cell_factor, depth_factor)
     ch_simulated
         .mix( SIMULATE_DATA.out )
         .set{ ch_simulated }

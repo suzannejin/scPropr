@@ -11,6 +11,8 @@ parser$add_argument('-b', '--barcodes', type='character', help="Barcodes (row) i
 parser$add_argument('-o', '--output', type='character', help="Output count data")
 parser$add_argument('-o2', '--output2', type='character', help="Updated features name")
 parser$add_argument('-o3', '--output3', type='character', help="Updated barcodes id")
+parser$add_argument('--ncell', type='character', help="Number of cells in the output matrix wanted")
+parser$add_argument('--ngene', type='character', help="Number of genes in the output matrix wanted")
 parser = parser$parse_args()
 
 
@@ -79,14 +81,33 @@ p = df[,2]
 
 ipos = history_common_nonzero_sample_set[[p]]
 jpos = idx[1:p]
-count2 = count[ipos,jpos]
-features2 = features[jpos]
-barcodes2 = barcodes[ipos]
-dim(count2) 
+count    = count[ipos,jpos]
+features = features[jpos]
+barcodes = barcodes[ipos]
+dim(count) 
 
-if (any(count2 == 0)) stop("Error: obtained data with zero values")
+if (any(count == 0)) stop("Error: obtained data with zero values")
+
+
+# restrinct size, if wanted
+if (!is.null(parser$ngene)){
+    message("getting only ", parser$ngene, " genes")
+    set.seed(0); pos = sample(1:ncol(count), parser$ngene)
+    count    = count[,pos]
+    features = features[pos]
+}
+if (!is.null(parser$ncell)){
+    message("getting only ", parser$ncell, " cells")
+    set.seed(0); pos = sample(1:nrow(count), parser$ncell)
+    count    = count[pos,]
+    barcodes = barcodes[pos]
+}
+if (!is.null(parser$ngene) && !is.null(parser$ncell)){
+    if (nrow(count) != parser$ncell && ncol(count) != parser$ngene) stop("Error with parsing the correct [ncell,ngene] sizes.")
+}
 
 # write output files
-fwrite(count2, file=parser$output, quote=F, sep=",", row.names=F, col.names=F, compress="gzip")
-if (!is.null(parser$output2)) fwrite(list(features2), file=parser$output2, quote=F, sep=",", row.names=F, col.names=F)
-if (!is.null(parser$output3)) fwrite(list(barcodes2), file=parser$output3, quote=F, sep=",", row.names=F, col.names=F)
+message("writing output with size [", nrow(count), ",", ncol(count), "]")
+fwrite(count, file=parser$output, quote=F, sep=",", row.names=F, col.names=F, compress="gzip")
+if (!is.null(parser$output2)) fwrite(list(features), file=parser$output2, quote=F, sep=",", row.names=F, col.names=F)
+if (!is.null(parser$output3)) fwrite(list(barcodes), file=parser$output3, quote=F, sep=",", row.names=F, col.names=F)
