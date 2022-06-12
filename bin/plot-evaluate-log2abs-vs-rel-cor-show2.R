@@ -14,25 +14,20 @@ parser$add_argument('--color', type='character', nargs='+')
 parser = parser$parse_args()
 
 dic = c(
-    "experimental"                 = "experimental",
-    "phaseS"                       = "phaseS",
-    "phaseS+simulate+s2+n5+c1"     = "slope=2",
-    "phaseS+simulate+s4+n5+c1"     = "slope=4",
-    "phaseS+simulate+s6+n5+c1"     = "slope=6",
-    "phaseS+simulate+s8+n5+c1"     = "slope=8",
-    "phaseS+rel"                   = "phaseS+rel",
-    "phaseS+rel+simulate+s2+n5+c1" = "slope=2",
-    "phaseS+rel+simulate+s4+n5+c1" = "slope=4",
-    "phaseS+rel+simulate+s6+n5+c1" = "slope=6",
-    "phaseS+rel+simulate+s8+n5+c1" = "slope=8"
+    "phaseS+simulate+s2+n5+c3+d3"     = "slope=2",
+    "phaseS+simulate+s4+n5+c3+d3"     = "slope=4",
+    "phaseS+simulate+s6+n5+c3+d3"     = "slope=6",
+    "phaseS+simulate+s8+n5+c3+d3"     = "slope=8"
 )
 
 message('reading and organizing input')
 df = as.data.frame(fread(parser$input, header=T))
+df = df[which(df[,"type"] %in% names(dic)), ]
 df[,"type"] = as.vector(dic[df[,"type"]])
 if ( !is.null(parser$cor) ){
     pos= which(df[,"cor"] %in% parser$cor)
     df = df[pos,]
+    df[,"cor"] = factor(df[,"cor"], level=parser$cor)
 }
 if ( !is.null(parser$transf) ){
     pos= which(df[,"transf"] %in% parser$transf)

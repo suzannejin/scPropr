@@ -13,17 +13,11 @@ parser$add_argument('--transf', type='character', nargs='+', help="Transformatio
 parser = parser$parse_args()
 
 dic = c(
-    "experimental"                 = "experimental",
-    "phaseS"                       = "phaseS",
-    "phaseS+simulate+s2+n5+c1"     = "slope=2",
-    "phaseS+simulate+s4+n5+c1"     = "slope=4",
-    "phaseS+simulate+s6+n5+c1"     = "slope=6",
-    "phaseS+simulate+s8+n5+c1"     = "slope=8",
-    "phaseS+rel"                   = "phaseS+rel",
-    "phaseS+rel+simulate+s2+n5+c1" = "slope=2",
-    "phaseS+rel+simulate+s4+n5+c1" = "slope=4",
-    "phaseS+rel+simulate+s6+n5+c1" = "slope=6",
-    "phaseS+rel+simulate+s8+n5+c1" = "slope=8"
+    "experimental"                    = "experimental",
+    "phaseS+simulate+s2+n5+c3+d3"     = "slope=2",
+    "phaseS+simulate+s4+n5+c3+d3"     = "slope=4",
+    "phaseS+simulate+s6+n5+c3+d3"     = "slope=6",
+    "phaseS+simulate+s8+n5+c3+d3"     = "slope=8"
 )
 
 message('reading and organizing input')

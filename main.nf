@@ -64,6 +64,7 @@ workflow {
             params.do_simulation
         )  
         ch_input
+            .filter{ it[1] == 'experimental' }   // don't want to compute the benchmark on phaseS original data
             .mix( DATA_SIMULATION.out.ch_simulated )
             .set{ ch_input }    
     } 
