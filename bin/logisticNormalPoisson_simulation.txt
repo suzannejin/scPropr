@@ -1,0 +1,85 @@
+#sample 5000 multinomial (compositional) parameters from a logistic-normal using real data for their log-ratio mean and covariance
+#then get Poisson (total) counts for 5000 samples using real data for their parameters (rates)
+#then make them increasingly multinomial flattening out the rates to a uniform rate  
+ 
+ma=read.csv("../data/mouseStemCells_experimental_nozero_absolute.csv")
+#get realistic parameters for the logistic normal using alr-transformed data: 
+alr=log(ma)-log(ma[,ncol(ma)])
+alr=alr[,-ncol(ma)]
+#our parameters:
+S=cov(alr)
+m=apply(alr,2,mean)
+#normal:
+library(MASS)
+al=mvrnorm(n = 5000, mu=m, Sigma=S)
+#backtransform to compositions:
+M=exp(al)/(1+apply(exp(al),1,sum))
+M=cbind(M,1-apply(M,1,sum))
+#(the second line adds the reference part)
+colnames(M)[ncol(M)]=colnames(ma)[ncol(ma)]
+#These are the "true" multinomial parameters for 5000 "cells".
+# https://www.stat.umn.edu/geyer/5102/notes/brand.pdf
+# https://arxiv.org/pdf/1903.11695.pdf
+#We can now sample multinomial and Poisson counts from them.
+#sample size of first 5000 data points as total Poisson rate parameter:
+r=apply(ma,1,sum)[1:nrow(M)]
+#they are thought to be realistic examples to feed the simulation
+#We can now get Poisson counts by getting totals from a univariate Poisson
+#Then use these as sample size for our multinomial samples
+#This works because multivariate Poisson factorizes into univariate Poisson of the totals times a multinomial using these totals
+po=rep(0,length(r)) #will be simulated totals
+mp=matrix(0,nrow(M),ncol(M)) #will be our Poisson counts
+for (i in 1:nrow(M)){
+    po[i]=rpois(1,r[i]) #total counts from Poisson
+    n=po[i]
+    q=M[i,] #multinomial parameters from logistic-normal
+    mp[i,]=t(rmultinom(1,n,q)) #multinomial counts
+}
+#This recovers well the original data, see, e.g., these correlations:
+plot(t(ma[5,]),t(mp[5,]))
+plot(ma[1:5000,1],mp[,1])
+#This is the "true" absolute data compatible with the relative interaction structure of the log-ratio covariance S
+#We can now "flatten" the Poisson counts in the sense that we sample from rates that are uniform, i.e., have nothing to do with the correct rates above
+ra=mean(r) #average rate
+pf=rep(0,length(r)) #will be wrong totals
+mf=matrix(0,nrow(M),ncol(M)) #will be relative data with wrong Poisson
+for (i in 1:nrow(M)){
+    pf[i]=rpois(1,ra) #total counts from false Poisson
+    n=pf[i]
+    q=M[i,] #multinomial parameters from logistic-normal
+    mf[i,]=t(rmultinom(1,n,q))
+}
+#compare the "true" totals with the "wrong" ones:
+hist(po)
+abline(v=ra,col="red")
+hist(pf)
+abline(v=ra,col="red")
+#(we could also get truly uniform multinomial counts from the same total ra)
+#Now convexly combine the true rates r[i] with the average rate ra using a general parameter beta: l[i]=(1-b)*r[i]+b*ra
+#b=1: fully relative
+#b=0: fully absolute
+#what follows is a list with 5 matrices containing the matrices mp (absolute) and mf (relative with variable totals), as well as three intermediate ones: 
+mm=list()
+rr=list()
+beta=c(0,0.25,0.5,0.75,1)
+for (c in 1:length(beta)){
+    b=beta[c]
+    mm[[c]]=matrix(0,nrow(M),ncol(M)) #data matrix
+    rr[[c]]=rep(0,nrow(M))# Poisson count totals
+    
+    for (i in 1:nrow(M)){
+        rf=(1-b)*r[i]+b*ra #b-flattened Poisson rate
+        rr[[c]][i]=rpois(1,rf) #total counts from flattened Poisson
+        n=rr[[c]][i]
+        q=M[i,] #multinomial parameters from logistic-normal
+        mm[[c]][i,]=t(rmultinom(1,n,q))
+    }
+}
+names(mm)=beta
+names(rr)=beta
+#original correlation b/w the 2 simulated genes 1 and 2 gradually fades:
+plot(log(mm[[1]][,1]),log(mm[[1]][,2]))
+plot(log(mm[[2]][,1]),log(mm[[2]][,2]))
+plot(log(mm[[3]][,1]),log(mm[[3]][,2]))
+plot(log(mm[[4]][,1]),log(mm[[4]][,2]))
+plot(log(mm[[5]][,1]),log(mm[[5]][,2]))
