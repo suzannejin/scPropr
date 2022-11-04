@@ -11,7 +11,7 @@ parser$add_argument('--abs', type='character', help="Coefficients on log2 absolu
 parser$add_argument('--rel', type='character', help="Coefficients on transformed relative data")
 parser$add_argument('--features', type='character', help="List of gene names")
 parser$add_argument('--out', type='character', help="Output filename containing the metric")
-parser$add_argument('--filter', type='integer', default=20, help="Keep only the pairs whose dropout <= filtering threshold (in percentage). Default = 20")
+parser$add_argument('--filter', type='integer', default=20, help="Keep only the genes whose dropout <= filtering threshold (in percentage). Default = 20")
 parser$add_argument('--method', type='character', help="Metric method. Choices: [pearson, spearman, kendall, rho]")
 parser = parser$parse_args()
 
@@ -79,6 +79,7 @@ rel = rel[pos, pos]
 abs = abs[lower.tri(abs)]
 rel = rel[lower.tri(rel)]
 features = features[pos]
+message("filtered ", nrow(abs) - length(pos), " columns and rows")
 
 # calculate cor
 if (parser$method %in% c('pearson', 'spearman', 'kendall', 'rho')){
