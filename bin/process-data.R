@@ -66,7 +66,7 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min", "pseudoc
         }else{
             stop("wrong output parameter for zCompositions")
         }
-        count = cmultRepl(count, method="CZM", label=0, output=par)
+        count = cmultRepl(count, label=0, output=par)
 
     }else if (method == "one"){
         count[count == 0] = 1
