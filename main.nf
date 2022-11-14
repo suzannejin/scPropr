@@ -70,12 +70,6 @@ workflow {
             .set{ ch_input }    
     } 
 
-    /* module: get relative data */
-    GET_RELATIVE(ch_input)
-    ch_input
-        .mix( GET_RELATIVE.out )
-        .set{ ch_input }
-
     /* filter out genes with high zero rate */
     if ( params.do_filter_genes ){
         FILTER_GENES( ch_input )
@@ -95,6 +89,12 @@ workflow {
             .mix( SELECT_NOZERO_GENES.out )
             .set{ ch_input }
     }
+
+    /* module: get relative data */
+    GET_RELATIVE(ch_input)
+    ch_input
+        .mix( GET_RELATIVE.out )
+        .set{ ch_input }
 
     /* subworkflow: plot basic figures for experimental and simulated data */
     // TODO also compute data exploration plots for transformed data
