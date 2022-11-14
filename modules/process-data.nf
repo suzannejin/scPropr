@@ -38,17 +38,17 @@ process PROCESS_DATA {
     when:
     if (!params.do_transform_abs && abs_rel == 'absolute'){
         if (method_replace_zero == 'NA' && method_transform_data == 'log2' && refgene == 'NA'){true}
-        else if (method_replace_zero != 'NA' && method_transform_data == 'log2' && refgene == 'NA' && full == 'full'){true}
+        else if (method_replace_zero != 'NA' && method_transform_data == 'log2' && refgene == 'NA' && full != 'nozero'){true}
     }else{
         if (method_replace_zero == 'NA' && method_transform_data in ['log2','tmm','scran'] && refgene == 'NA'){true}
-        else if (method_replace_zero != 'NA' && method_transform_data == 'clr' && refgene == 'NA' && full == 'full'){true}
+        else if (method_replace_zero != 'NA' && method_transform_data == 'clr' && refgene == 'NA' && full != 'nozero'){true}
         else if (method_replace_zero == 'NA' && method_transform_data == 'clr' && refgene == 'NA' && full == 'nozero'){true}
-        else if (method_replace_zero != 'NA' && method_transform_data == 'alr' && refgene != 'NA' && full == 'full'){true}
+        else if (method_replace_zero != 'NA' && method_transform_data == 'alr' && refgene != 'NA' && full != 'nozero'){true}
         else if (method_replace_zero == 'NA' && method_transform_data == 'alr' && refgene in params.refgenes_nozero && full == 'nozero'){true}
     }
 
     script:
-    if (full == 'full'){
+    if (full != 'nozero'){
         def ref_gene_cml = refgene == 'NA' ? " " : "--refgene $refgene" 
         def method_zero = method_replace_zero == 'NA' ? " " : "--method_zero $method_replace_zero"
         """
@@ -80,7 +80,7 @@ process PROCESS_DATA {
 
 
     stub:
-    if (full == 'full'){
+    if (full != 'nozero'){
         def ref_gene_cml = refgene == 'NA' ? " " : "--refgene $refgene" 
         def method_zero = method_replace_zero == 'NA' ? " " : "--method_zero $method_replace_zero"
         """

@@ -11,13 +11,13 @@ parser$add_argument('-o', '--output', type='character', help="Output count data,
 parser$add_argument('-o2', '--output2', type='character', help="Output size factor file")
 parser$add_argument('--lambda', type='character', help="Output file storing the lambda value used in entropy::freqs.shrink")
 parser$add_argument('--features', type='character')
-parser$add_argument('--method_zero', type='character', help="Zero handling method for clr and alr. Choices = [zcompositions, one, min, pseudocount, pseudoproportion]")
+parser$add_argument('--method_zero', type='character', help="Zero handling method for clr and alr. Choices = [bgm, czm, one, min, pseudocount, pseudoproportion]")
 parser$add_argument('--method_transf', type='character', help="Transformation or normalization method. Choices = [log2, clr, alr, tmm, scran]")
 parser$add_argument('--refgene', type='character', help="Reference gene index. This is required to compute alr.")
 parser = parser$parse_args()
 
 # check arguments
-if (!is.null(parser$method_zero) && !( parser$method_zero %in% c("zcompositions", "one", "min", "pseudocount", "pseudoproportion") )){
+if (!is.null(parser$method_zero) && !( parser$method_zero %in% c("bgm", "czm", "one", "min", "pseudocount", "pseudoproportion") )){
     stop("wrong zero replacement method - ", parser$method_zero)
 }
 if (!is.null(parser$method_transf) && !( parser$method_transf %in% c("log2", "clr", "alr", "tmm", "scran") )){
@@ -48,7 +48,7 @@ class(count)
 
 # functions -------------------------------------------------------------------
 
-replace_zero <- function(count, method=c("zcompositions", "one", "min", "pseudocount", "pseudoproportion")){
+replace_zero <- function(count, method=c("bgm", "czm", "one", "min", "pseudocount", "pseudoproportion")){
 
     method = match.arg(method)
     if (!any(count==0, na.rm=T)) return(count)
@@ -56,7 +56,7 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min", "pseudoc
     lambda = NA
 
     # replace zero
-    if (method == "zcompositions"){
+    if (method == "bgm"){
         require(zCompositions)
         pars = as.character(formals(cmultRepl)$output)
         if ("p-counts" %in% pars){
@@ -67,7 +67,17 @@ replace_zero <- function(count, method=c("zcompositions", "one", "min", "pseudoc
             stop("wrong output parameter for zCompositions")
         }
         count = cmultRepl(count, label=0, output=par)
-
+    }else if (method == "czm"){
+        require(zCompositions)
+        pars = as.character(formals(cmultRepl)$output)
+        if ("p-counts" %in% pars){
+            par = "p-counts"
+        }else if ("counts" %in% pars){
+            par = "counts"
+        }else{
+            stop("wrong output parameter for zCompositions")
+        }
+        count = cmultRepl(count, method="CZM", label=0, output=par)
     }else if (method == "one"){
         count[count == 0] = 1
 
@@ -126,8 +136,13 @@ shrinkc <- function(n){
 lambda = NA
 if (parser$method_transf == 'log2'){
     message("log2-transforming data")
-    count = log2(count + 1)
-
+    # count = log2(count + 1)
+    method = parser$method_zero
+    if (is.null(parser$method_zero)) method = "one"
+    out    = replace_zero(count, method)
+    count  = out[[1]]
+    lambda = out[[2]]
+    count  = log2(count)
 }else if (parser$method_transf == 'alr'){
     message("alr-transforming data")
     out    = replace_zero(count, parser$method_zero)

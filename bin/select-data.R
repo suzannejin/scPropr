@@ -18,6 +18,7 @@ parser$add_argument('--select_cell', type='character', help="File specifying the
 parser$add_argument('--ncell', type='character', help="Number of cells wanted")
 parser = parser$parse_args()
 
+
 # read input count data
 count    = fread(parser$input, header=F)
 features = fread(parser$features, header=F)$V1
@@ -25,6 +26,7 @@ barcodes = fread(parser$barcodes, header=F)$V1
 
 # filter genes 
 if (is.numeric(parser$filter_gene)){
+    parser$filter_gene = parser$filter_gene / 100
     message("filter genes with dropout > ", parser$filter_gene)
     dropout  = colMeans(count==0)
     pos      = which(dropout <= parser$filter_gene)
@@ -33,6 +35,7 @@ if (is.numeric(parser$filter_gene)){
 }
 # filter cells
 if (is.numeric(parser$filter_cell)){
+    parser$filter_cell = parser$filter_cell / 100
     message("filter cells with dropout > ", parser$filter_cell)
     dropout  = rowMeans(count==0)
     pos      = which(dropout <= parser$filter_cell)

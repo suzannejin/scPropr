@@ -1,6 +1,60 @@
 
 /* keep specified cells - for simulation */
 
+process FILTER_GENES {
+    
+    label 'process_low_short'
+    container 'suzannejin/scpropr:propr'
+    tag "$dataset"
+
+    input:
+    tuple val(dataset),
+          val(exp_sim),
+          val(full),
+          val(abs_rel),
+          path(count),
+          path(features),
+          path(barcodes)
+
+    output:
+    tuple val(dataset),
+          val(exp_sim),
+          val('filtered'),
+          val(abs_rel),
+          path("${dataset}_${exp_sim}_filtered_${abs_rel}.csv.gz"),
+          path("${dataset}_${exp_sim}_filtered_features.csv"),
+          path("${dataset}_${exp_sim}_filtered_barcodes.csv")
+    
+    script:
+    """
+    select-data.R \
+        -i $count \
+        -f $features \
+        -b $barcodes \
+        -o ${dataset}_${exp_sim}_filtered_${abs_rel}.csv.gz \
+        -o2 ${dataset}_${exp_sim}_filtered_features.csv \
+        -o3 ${dataset}_${exp_sim}_filtered_barcodes.csv \
+        --filter_gene ${params.gene_dropout_threshold}
+    """
+
+    stub:
+    """
+    echo select-data.R \
+        -i $count \
+        -f $features \
+        -b $barcodes \
+        -o ${dataset}_${exp_sim}_nozero_${abs_rel}.csv.gz \
+        -o2 ${dataset}_${exp_sim}_nozero_features.csv \
+        -o3 ${dataset}_${exp_sim}_nozero_barcodes.csv \
+        --filter_gene ${params.gene_dropout_threshold}
+    touch ${dataset}_${exp_sim}_nozero_${abs_rel}.csv.gz
+    touch ${dataset}_${exp_sim}_nozero_features.csv
+    touch ${dataset}_${exp_sim}_nozero_barcodes.csv
+    """
+
+}
+
+
 process SELECT_BARCODES_SIM {
 
     label 'process_low_short'

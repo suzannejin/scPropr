@@ -35,7 +35,7 @@ ch_count
 
 // modules
 // include { GET_REDUCED_DATASET } from "${launchDir}/modules/select-data.nf"
-include { SELECT_NOZERO_GENES } from "${launchDir}/modules/select-data.nf"
+include { SELECT_NOZERO_GENES; FILTER_GENES } from "${launchDir}/modules/select-data.nf"
 include { GET_RELATIVE } from "${launchDir}/modules/get-relative.nf"
 
 // subworkflows
@@ -70,8 +70,17 @@ workflow {
             .set{ ch_input }    
     } 
 
-    // TODO should I also include a general filtering step for all the datasets?
-    // since the simulated datasets might have high zero percentage..
+    /* module: get relative data */
+    GET_RELATIVE(ch_input)
+    ch_input
+        .mix( GET_RELATIVE.out )
+        .set{ ch_input }
+
+    /* filter out genes with high zero rate */
+    if ( params.do_filter_genes ){
+        FILTER_GENES( ch_input )
+        ch_input = FILTER_GENES.out
+    }
 
     /* module: get non-zero gene datasets */
     // if ( params.do_nozero_genes ){
@@ -86,13 +95,6 @@ workflow {
             .mix( SELECT_NOZERO_GENES.out )
             .set{ ch_input }
     }
-
-    /* module: get relative data */
-    GET_RELATIVE(ch_input)
-    ch_input
-        .mix( GET_RELATIVE.out )
-        .set{ ch_input }
-
 
     /* subworkflow: plot basic figures for experimental and simulated data */
     // TODO also compute data exploration plots for transformed data
