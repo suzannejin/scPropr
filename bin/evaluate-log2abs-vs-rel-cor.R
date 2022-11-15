@@ -71,15 +71,15 @@ if ( ncol(abs) != ncol(ori) ) stop("abs and ori matrices have different number o
 if ( ncol(abs) != length(features) ) stop("ncol(abs) != length(features)")
 
 # get dropout
-message('filtering genes that have dropout > ', filter)
+message('filtering out genes that have dropout > ', filter)
 dropout = colMeans(ori == 0)
 pos = which(dropout <= filter)
+message("filtered ", nrow(abs) - length(pos), " columns and rows")
 abs = abs[pos, pos]
 rel = rel[pos, pos]
 abs = abs[lower.tri(abs)]
 rel = rel[lower.tri(rel)]
 features = features[pos]
-message("filtered ", nrow(abs) - length(pos), " columns and rows")
 
 # calculate cor
 if (parser$method %in% c('pearson', 'spearman', 'kendall', 'rho')){

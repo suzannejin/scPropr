@@ -27,6 +27,10 @@ ch_count
     .combine( ch_features, by:[0,1] )
     .combine( ch_barcodes, by:[0,1] )
     .set{ ch_input }  // dataset, experimental, full, absolute, count, features, barcodes
+Channel
+    .fromPath(params.genes_fixed, checkIfExists:true)
+    .map { it -> [ it.getSimpleName().tokenize('_')[0], it ] } 
+    .set{ ch_genes_fixed }
 
 
 ///////////////////////////////////////////////////////////////
@@ -35,7 +39,7 @@ ch_count
 
 // modules
 // include { GET_REDUCED_DATASET } from "${launchDir}/modules/select-data.nf"
-include { SELECT_NOZERO_GENES; FILTER_GENES } from "${launchDir}/modules/select-data.nf"
+include { SELECT_NOZERO_GENES; FILTER_GENES; SELECT_FIXED_GENES } from "${launchDir}/modules/select-data.nf"
 include { GET_RELATIVE } from "${launchDir}/modules/get-relative.nf"
 
 // subworkflows
@@ -70,10 +74,12 @@ workflow {
             .set{ ch_input }    
     } 
 
-    /* filter out genes with high zero rate */
+    /* module: filter out genes with high zero rate */
+    full = 'full'
     if ( params.do_filter_genes ){
         FILTER_GENES( ch_input )
         ch_input = FILTER_GENES.out
+        full = 'filtered'
     }
 
     /* module: get non-zero gene datasets */
@@ -90,6 +96,18 @@ workflow {
             .set{ ch_input }
     }
 
+    /* module: get fixed genes */
+    if ( params.do_fix_genes ){
+        ch_input
+            .combine(ch_genes_fixed, by:0)
+            .filter{ it[2] == full }
+            .set{ ch_to_fixed }
+        SELECT_FIXED_GENES( ch_to_fixed )
+        ch_input
+            .mix( SELECT_FIXED_GENES.out )
+            .set{ ch_input }
+    }
+
     /* module: get relative data */
     GET_RELATIVE(ch_input)
     ch_input
@@ -101,7 +119,6 @@ workflow {
     if ( params.do_plot_data_exploration ){
         DATA_EXPLORATION( ch_input )  
     }
-
 
     /* subworkflow: data processing */
     ch_ori = ch_input

@@ -43,13 +43,13 @@ process FILTER_GENES {
         -i $count \
         -f $features \
         -b $barcodes \
-        -o ${dataset}_${exp_sim}_nozero_${abs_rel}.csv.gz \
-        -o2 ${dataset}_${exp_sim}_nozero_features.csv \
-        -o3 ${dataset}_${exp_sim}_nozero_barcodes.csv \
+        -o ${dataset}_${exp_sim}_filtered_${abs_rel}.csv.gz \
+        -o2 ${dataset}_${exp_sim}_filtered_features.csv \
+        -o3 ${dataset}_${exp_sim}_filtered_barcodes.csv \
         --filter_gene ${params.gene_dropout_threshold}
-    touch ${dataset}_${exp_sim}_nozero_${abs_rel}.csv.gz
-    touch ${dataset}_${exp_sim}_nozero_features.csv
-    touch ${dataset}_${exp_sim}_nozero_barcodes.csv
+    touch ${dataset}_${exp_sim}_filtered_${abs_rel}.csv.gz
+    touch ${dataset}_${exp_sim}_filtered_features.csv
+    touch ${dataset}_${exp_sim}_filtered_barcodes.csv
     """
 
 }
@@ -216,6 +216,61 @@ process GET_REDUCED_DATASET {
     touch ${dataset}_${exp_sim}_nozero_barcodes.csv
     """
 }
+
+
+process SELECT_FIXED_GENES {
+
+    label 'process_low_short'
+    container 'suzannejin/scpropr:propr'
+    tag "$dataset-$exp_sim"
+
+    input:
+    tuple val(dataset),
+          val(exp_sim),
+          val(full),
+          val(abs_rel),
+          path(count),
+          path(features),
+          path(barcodes),
+          path(fixed_features)
+
+    output:
+    tuple val(dataset),
+          val(exp_sim),
+          val('fixed'),
+          val(abs_rel),
+          path("${dataset}_${exp_sim}_fixed_${abs_rel}.csv.gz"),
+          path("${dataset}_${exp_sim}_fixed_features.csv"),
+          path("${dataset}_${exp_sim}_fixed_barcodes.csv")
+    
+    script:
+    """
+    select-data.R \
+        -i $count \
+        -f $features \
+        -b $barcodes \
+        -o ${dataset}_${exp_sim}_fixed_${abs_rel}.csv.gz \
+        -o2 ${dataset}_${exp_sim}_fixed_features.csv \
+        -o3 ${dataset}_${exp_sim}_fixed_barcodes.csv \
+        --select_gene $fixed_features
+    """
+
+    stub:
+    """
+    echo select-data.R \
+        -i $count \
+        -f $features \
+        -b $barcodes \
+        -o ${dataset}_${exp_sim}_fixed_${abs_rel}.csv.gz \
+        -o2 ${dataset}_${exp_sim}_fixed_features.csv \
+        -o3 ${dataset}_${exp_sim}_fixed_barcodes.csv \
+        --select_gene $fixed_features
+    touch ${dataset}_${exp_sim}_fixed_${abs_rel}.csv.gz
+    touch ${dataset}_${exp_sim}_fixed_features.csv
+    touch ${dataset}_${exp_sim}_fixed_barcodes.csv
+    """
+}
+
 
 process EXP_NOZERO_GENES_2_SELECT {
 

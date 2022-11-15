@@ -37,7 +37,7 @@ process EVALUATE_LOG2ABS_VS_REL_COR {
         --abs $abs \
         --rel $rel \
         --features $features \
-        --filter 1 \
+        --filter 100 \
         --out ${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}_${method_eval}.csv \
         --method $method_eval
     sleep 30
@@ -50,7 +50,7 @@ process EVALUATE_LOG2ABS_VS_REL_COR {
         --abs $abs \
         --rel $rel \
         --features $features \
-        --filter 1 \
+        --filter 100 \
         --out ${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}_${method_eval}.csv \
         --method $method_eval
     touch ${dataset}_${exp_sim}_${full}_${method_replace_zero}_${method_transform_data}_${refgene}_${method_cor}_${method_eval}.csv

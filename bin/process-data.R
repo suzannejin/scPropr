@@ -67,6 +67,7 @@ replace_zero <- function(count, method=c("bgm", "czm", "one", "min", "pseudocoun
             stop("wrong output parameter for zCompositions")
         }
         count = cmultRepl(count, label=0, output=par)
+
     }else if (method == "czm"){
         require(zCompositions)
         pars = as.character(formals(cmultRepl)$output)
@@ -78,8 +79,9 @@ replace_zero <- function(count, method=c("bgm", "czm", "one", "min", "pseudocoun
             stop("wrong output parameter for zCompositions")
         }
         count = cmultRepl(count, method="CZM", label=0, output=par)
+        
     }else if (method == "one"){
-        count[count == 0] = 1
+        count = count + 1
 
     }else if (method == "min"){
         count = count
@@ -136,13 +138,13 @@ shrinkc <- function(n){
 lambda = NA
 if (parser$method_transf == 'log2'){
     message("log2-transforming data")
-    # count = log2(count + 1)
     method = parser$method_zero
-    if (is.null(parser$method_zero)) method = "one"
-    out    = replace_zero(count, method)
+    if (is.null(parser$method_zero)) parser$method_zero = "one"
+    out    = replace_zero(count, parser$method_zero)
     count  = out[[1]]
     lambda = out[[2]]
     count  = log2(count)
+
 }else if (parser$method_transf == 'alr'){
     message("alr-transforming data")
     out    = replace_zero(count, parser$method_zero)
@@ -164,15 +166,22 @@ if (parser$method_transf == 'log2'){
 }else if (parser$method_transf == 'tmm'){
     message("normalizing data with method tmm")
     require(edgeR)
-    count       = t(count) # it requires row=genes, col=cells
-    y           = DGEList(counts=count)   
-    y           = calcNormFactors(y, method="TMM")
-    size.factor = y$samples$norm.factors
-    eff.libsize = y$samples$lib.size * size.factor
-    adj.prior   = 1 * eff.libsize / mean(eff.libsize)
-    adj.libsize = eff.libsize + 2 * adj.prior
-    count       = (t(count) + adj.prior) / adj.libsize * 1e6  ## note that adj.prior has length libsize, therefore you should be careful when transposing and making matrix calculations
-    count       = log2(count)
+    count           = t(count) # it requires row=genes, col=cells
+    y               = DGEList(counts=count)   
+    y               = calcNormFactors(y, method="TMM")
+    size.factor     = y$samples$norm.factors
+    eff.libsize     = y$samples$lib.size * size.factor
+    if (is.null(parser$method_zero)){
+        adj.prior   = 1 * eff.libsize / mean(eff.libsize)
+        adj.libsize = eff.libsize + 2 * adj.prior
+        count       = (t(count) + adj.prior) / adj.libsize * 1e6  ## note that adj.prior has length libsize, therefore you should be careful when transposing and making matrix calculations
+    }else{
+        out         = replace_zero(t(count), parser$method_zero)
+        count       = out[[1]]
+        lambda      = out[[2]]
+        count       = count / eff.libsize * 1e6
+    }
+    count = log2(count)
 
 }else if (parser$method_transf == 'scran'){
     message(" normalizing data with method scran")
@@ -185,7 +194,9 @@ if (parser$method_transf == 'log2'){
     sce         = computeSumFactors(sce, clusters=clusters)  
     size.factor = sce@colData@listData$sizeFactor
     count       = t(count) / size.factor
-    count       = log2(count + 1)
+    if (is.null(parser$method_zero)) parser$method_zero = "one"
+    count       = replace_zero(count, parser$method_zero)
+    count       = log2(count)
 
 }else{
     stop("make sure you introduced the correct processing methods")
