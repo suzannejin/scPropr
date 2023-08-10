@@ -17,4 +17,4 @@ pkgs = c(
 install.packages(pkgs)
 
 # propr package
-devtools::install_github("tpq/propr")
+devtools::install_github("suzannejin/propr")

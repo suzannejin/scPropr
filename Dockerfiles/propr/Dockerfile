@@ -14,7 +14,8 @@ RUN Rscript /tmp/normalize.R
 
 # install sanity
 RUN git clone https://github.com/jmbreda/Sanity.git \
-    &&  sudo apt-get update \
-    && sudo apt-get install libgomp1 \
+    && apt-get update \
+    && apt-get install -y libgomp1 \
     && cd Sanity/src \
-    && make
+    && make \
+    && cp ../bin/Sanity /bin/.
