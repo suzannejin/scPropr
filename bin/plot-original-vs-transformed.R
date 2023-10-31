@@ -30,7 +30,7 @@ get_mat <- function(filename, nrefgene){
 }
 get_df <- function(original, transformed, method, nrefgene, npoint){
     original    = get_mat(original, nrefgene)
-    transformed = get_mat(transformed, nrefgene=NA)
+    transformed = get_mat(transformed, nrefgene)
     if ( (nrow(original) != nrow(transformed)) || (ncol(original) != ncol(transformed)) ) { stop("original and transformed matrices have different dimensiones") }
     original    = as.vector(original)
     transformed = as.vector(transformed)

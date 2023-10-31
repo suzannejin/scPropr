@@ -14,10 +14,10 @@ process PLOT_ORIGINAL_VS_TRANSFORMED {
           val(method_replace_zero), 
           val(method_transform_data), 
           val(refgene), 
-          file(features),
-          file(barcodes),
           file(original), 
-          file(transformed)
+          file(transformed),
+          file(features),
+          file(barcodes)
 
     output:
     file "${dataset}_${exp_sim}_${full}_${abs_rel}.png"
@@ -86,10 +86,10 @@ process PLOT_LOG_VS_TRANSFORMED {
           val(method_replace_zero), 
           val(method_transform_data), 
           val(refgene),
-          file(features), 
-          file(barcodes),
           file(log2),
-          file(transformed)
+          file(transformed),
+          file(features), 
+          file(barcodes)
 
     output:
     path "${dataset}_${exp_sim}_${full}_${abs_rel}.png"
@@ -104,7 +104,6 @@ process PLOT_LOG_VS_TRANSFORMED {
     params.do_plot_log_vs_transf
 
     script:
-    def methods_zero   = method_replace_zero.join(' ')
     def methods_transf = method_transform_data.join(' ')
     def refgenes       = refgene.join(' ')
     def transformed2   = transformed.join(' ')
@@ -112,17 +111,16 @@ process PLOT_LOG_VS_TRANSFORMED {
     plot-original-vs-transformed.R \
         --original $log2 \
         --transformed $transformed2 \
-        --method_zero $methods_zero \
+        --method_zero $method_replace_zero \
         --method_transf $methods_transf \
         --refgene $refgenes \
         --features $features \
         --outdir . \
-        --prefix ${dataset}_${exp_sim}_${full}_${abs_rel} \
+        --prefix ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero} \
         --xlab log2
     """
 
     stub:
-    def methods_zero   = method_replace_zero.join(' ')
     def methods_transf = method_transform_data.join(' ')
     def refgenes       = refgene.join(' ')
     def transformed2   = transformed.join(' ')
@@ -130,16 +128,16 @@ process PLOT_LOG_VS_TRANSFORMED {
     echo plot-original-vs-transformed.R \
         --original $log2 \
         --transformed $transformed2 \
-        --method_zero $methods_zero \
+        --method_zero $method_replace_zero \
         --method_transf $methods_transf \
         --refgene $refgenes \
         --features $features \
         --outdir . \
-        --prefix ${dataset}_${exp_sim}_${full}_${abs_rel} \
+        --prefix ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero} \
         --xlab log2
-    touch ${dataset}_${exp_sim}_${full}_${abs_rel}.png
-    touch ${dataset}_${exp_sim}_${full}_${abs_rel}-logx.png
-    touch ${dataset}_${exp_sim}_${full}_${abs_rel}-logy.png
-    touch ${dataset}_${exp_sim}_${full}_${abs_rel}-logxy.png
+    touch ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}.png
+    touch ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logx.png
+    touch ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logy.png
+    touch ${dataset}_${exp_sim}_${full}_${abs_rel}_${method_replace_zero}-logxy.png
     """
 }

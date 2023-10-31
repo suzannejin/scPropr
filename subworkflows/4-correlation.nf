@@ -13,7 +13,7 @@ workflow CORRELATION {
 
     take:
     ch_input  // dataset, exp_sim, full, abs_rel, replace_zero, transf_data, refgene, processed_count, features, barcodes
-    ch_ori    // dataset, experimental, full, absolute, count, features, barcodes
+    ch_ori    // dataset, experimental, full, absolute, original count, features, barcodes
     method_cor
     method_eval
     scatter_colorby

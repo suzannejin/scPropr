@@ -31,69 +31,85 @@ workflow DATA_PROCESSING {
         method_transform_data,
         refgenes
     )
-    PROCESS_DATA.out
-        .map { it -> [ 
-            it[0].getName().minus('.csv.gz').tokenize('_')[0],
-            it[0].getName().minus('.csv.gz').tokenize('_')[1],
-            it[0].getName().minus('.csv.gz').tokenize('_')[2],
-            it[0].getName().minus('.csv.gz').tokenize('_')[3],
-            it[0],
-            it[1]
-         ] }
-        .combine( ch_input, by:[0,1,2,3] )
-        .map{ it -> [ 
-            it[4].getName().minus('.csv.gz').tokenize('_'),
-            it[6],
-            it[4..5],
-            it[7..8]
-         ].flatten() }
-        .set{ ch_processed }   // dataset, exp_sim, full, abs_rel, replace_zero, transf_data, refgene, original_count, norm_count, norm_list, features, barcodes
-    ch_processed
-        .map{ it -> [it[0..6], it[10..11], it[7..8]].flatten() }
-        .set{ ch_processed2 }  // dataset, exp_sim, full, abs_rel, replace_zero, transf_data, refgene, features, barcodes, original_count, norm_count
+    PROCESS_DATA.out.count
+        .map{ it -> [
+            it[0].getName().minus('.csv.gz').tokenize('_'),
+            it[1],
+            it[2]
+        ].flatten() }
+        .set{ ch_processed }   // dataset, exp_sim, full, abs_rel, replace_zero, transf_data, refgene, transf_count, features, barcodes
+
 
     /* scatter plot original count data vs processed count data */
-    ch_processed2
-        .groupTuple( by:[0,1,2,3,7,8,9] )
+    ch_input
+        .map{ it -> [it[0..4]].flatten() }
+        .combine( ch_processed, by:[0,1,2,3])
+        .map{ it -> [
+            it[0],   // dataset
+            it[1],   // exp_sim
+            it[2],   // full
+            it[3],   // abs_rel
+            it[5],   // replace_zero
+            it[6],   // transf_data
+            it[7],   // refgene
+            it[4],   // original count
+            it[8],   // transformed count
+            it[9],   // features
+            it[10]   // barcodes
+        ]}
+        .groupTuple( by:[0,1,2,3,7,9,10] )
         .set{ ch2plot_original_vs_transformed }
     PLOT_ORIGINAL_VS_TRANSFORMED(ch2plot_original_vs_transformed)
 
 
-    /* scatter plot NA_log2 count data vs processed count data */
-    ch_processed2
-        .filter{ it[4] + '_' + it[5] == 'NA_log2' }
-        .map{ it -> [ it[0..3], it[10] ].flatten() }
-        .unique()
-        .set{ ch_tmp }
-    ch_processed2
-        .filter{ it[4] + '_' + it[5] != 'NA_log2' }
-        .map{ it -> [ it[0..8], it[10] ].flatten() }
-        .unique()
-        .combine( ch_tmp, by:[0,1,2,3] )
-        .unique()
-        .map{ it -> [ 
-            it[0..8],
-            it[10],
-            it[9]
-         ].flatten() }
-        .groupTuple( by:[0,1,2,3,7,8,9] )
-        .set{ ch2plot_log_vs_transformed }    // dataset, exp_sim, full, abs_rel, replace_zero, transf_data, refgene, features, barcodes, log2_count, norm_count
+    /* scatter plot log2 count data vs processed count data */
+    ch_processed
+        .filter{ it[5] == 'log2' }
+        .set{ ch_log2 }
+    ch_processed
+        .filter{ it[5] != 'log2' }
+        .set{ ch_transf }
+    ch_log2
+        .combine(ch_transf, by:[0,1,2,3,4])
+        .map{ it -> [
+            it[0],   // dataset
+            it[1],   // exp_sim
+            it[2],   // full
+            it[3],   // abs_rel
+            it[4],   // replace_zero
+            it[10],  // transf_data
+            it[11],  // refgene
+            it[7],   // log2 count
+            it[12],  // transformed count
+            it[8],   // features
+            it[9]    // barcodes
+        ] }
+        .groupTuple(by:[0,1,2,3,4,7,9,10])
+        .set{ ch2plot_log_vs_transformed }
     PLOT_LOG_VS_TRANSFORMED(ch2plot_log_vs_transformed)
 
 
     /* plot transformed count on relative vs absolute data */
     ch_processed
         .filter{ it[3] == 'absolute' }
-        .map{ it -> [ it[0..2], it[4..6], it[8] ].flatten() }
-        .unique()
+        .map{ it -> it.remove(3) }
         .set{ ch_abs }
     ch_processed
         .filter{ it[3] == 'relative' }
-        .map{ it -> [ it[0..2], it[4..6], it[8] ].flatten() }
-        .unique()
+        .map{ it -> it.remove(3) }
         .set{ ch_rel }
     ch_abs
-        .combine( ch_rel, by:[0,1,2,3,4,5] )  
+        .combine(ch_rel, by:[0,1,2,3,4,5])
+        .map{ it -> [
+            it[0],   // dataset
+            it[1],   // exp_sim
+            it[2],   // full
+            it[3],   // replace_zero
+            it[4],   // transf_data
+            it[5],   // refgene
+            it[6],   // abs count
+            it[9]    // rel count
+        ] }
         .groupTuple( by:[0,1,2,3] )
         .set{ ch2plot_abs_vs_rel }  
     PLOT_ABS_VS_REL_TRANSF(ch2plot_abs_vs_rel)
@@ -102,12 +118,21 @@ workflow DATA_PROCESSING {
     /* plot absolute log2 count vs absolute transformed count */
     ch_processed
         .filter{ it[3] == 'absolute' && it[5] == 'log2' }
-        .map{ it -> [ it[0..2], it[4], it[8], it[10] ].flatten() }  
-        .unique()
-        .set{ ch_log2abs }  
+        .map{ it -> it.remove(3) }
+        .set{ ch_log2abs }
     ch_log2abs
-        .combine( ch_rel, by:[0,1,2,3] )   // dataset, exp_sim, full, replace_zero, abslog_count, features, transf_data, refgene, normrel_count
-        .map{ it -> [ it[0..3], it[6..7], it[4], it[8], it[5]].flatten() }
+        .combine( ch_rel, by:[0,1,2,3] )
+        .map{ it -> [
+            it[0],   // dataset
+            it[1],   // exp_sim
+            it[2],   // full
+            it[3],   // replace_zero
+            it[9],   // transf_data
+            it[10],  // refgene
+            it[6],   // log2 abs count
+            it[11],  // transformed rel count
+            it[7]    // features
+        ] }
         .groupTuple( by:[0,1,2,3,6,8])
         .set{ ch2plot_log2abs_vs_rel }
     PLOT_LOG2ABS_VS_REL_TRANSF(ch2plot_log2abs_vs_rel)
@@ -123,6 +148,5 @@ workflow DATA_PROCESSING {
 
 
     emit:
-    ch_processed = ch_processed.map{ it -> [ it[0..6], it[8], it[10..11] ].flatten() } 
-                    // dataset, exp_sim, full, abs_rel, replace_zero, transf_data, refgene, processed_count, features, barcodes
+    ch_processed 
 }

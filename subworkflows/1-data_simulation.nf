@@ -17,7 +17,6 @@ workflow DATA_SIMULATION {
     ndata
     cell_factor
     depth_factor
-    do_simulation
 
     main:
     
@@ -36,6 +35,7 @@ workflow DATA_SIMULATION {
         ] }
         .set{ ch_model2simulation }
     
+
     /* simulate data */
     ch_simulated = Channel.empty()
     SIMULATE_DATA(ch_model2simulation, slope, ndata, cell_factor, depth_factor)
@@ -55,7 +55,7 @@ workflow DATA_SIMULATION {
             it[2] 
         ] }
         .set{ ch_simulated }
-        
+
 
     // TODO Compare simulated vs original
     // be careful here, because they might have different dimensions

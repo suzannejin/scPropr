@@ -29,14 +29,13 @@ process PLOT_ABS_VS_REL_TRANSF {
     script:
     def abs2           = abs.join(' ')
     def rel2           = rel.join(' ')
-    def methods_zero   = method_replace_zero.join(' ')
     def methods_transf = method_transform_data.join(' ')
     def refgenes       = refgene.join(' ')
     """
     plot-abs-vs-rel-transf.R \
         --abs $abs2 \
         --rel $rel2 \
-        --method_zero $methods_zero \
+        --method_zero $method_replace_zero \
         --method_transf $methods_transf \
         --refgene $refgenes \
         --output ${dataset}_${exp_sim}_${full}.png
@@ -45,14 +44,13 @@ process PLOT_ABS_VS_REL_TRANSF {
     stub:
     def abs2           = abs.join(' ')
     def rel2           = rel.join(' ')
-    def methods_zero   = method_replace_zero.join(' ')
     def methods_transf = method_transform_data.join(' ')
     def refgenes       = refgene.join(' ')
     """
     echo plot-abs-vs-rel-transf.R \
         --abs $abs2 \
         --rel $rel2 \
-        --method_zero $methods_zero \
+        --method_zero $method_replace_zero \
         --method_transf $methods_transf \
         --refgene $refgenes \
         --output ${dataset}_${exp_sim}_${full}.png

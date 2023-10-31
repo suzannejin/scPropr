@@ -27,6 +27,7 @@ for (j in 1:ncol(count)){
 }
 idx = order(n_nonzero_samples_per_gene, decreasing=T)
 n_nonzero_samples_per_gene_ordered = n_nonzero_samples_per_gene[idx]
+dropout_per_gene = colSums(count)
 
 # plot number of nonzero samples vs number of genes
 plot(
@@ -49,12 +50,14 @@ common_nonzero_sample_set = set_nonzero_samples_per_gene[[first]]
 n_common_nonzero_sample_set = c()
 n_reduced_gene_set = c()
 history_common_nonzero_sample_set = list()
+full_set_dropout = list()
 for (c in 1:length(idx)){
     j = idx[c]
     current_nonzero_sample_set =  set_nonzero_samples_per_gene[[j]]
     common_nonzero_sample_set = intersect(common_nonzero_sample_set, current_nonzero_sample_set)
     n_common_nonzero_sample_set[c] = length(common_nonzero_sample_set)
     history_common_nonzero_sample_set[[c]] = common_nonzero_sample_set
+    full_set_dropout[[c]] = mean(dropout_per_gene[idx[1:c]])
 }
 
 # plot number of common nonzero samples vs number of genes considered
@@ -62,7 +65,8 @@ plot(
     n_common_nonzero_sample_set,
     xlab = 'number of genes considered',
     ylab = 'number of common nonzero samples',
-    xlim = c(0, 2000)
+    xlim = c(0, 2000),
+    col  = full_set_dropout
 )
 p = 1200
 abline(h=n_common_nonzero_sample_set[p], v=p, col='red')

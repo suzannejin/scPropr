@@ -9,22 +9,18 @@ parser = ArgumentParser(description='Transform and normalize count data. Also sa
 parser$add_argument('-i', '--input', type='character', help="Input count data")
 parser$add_argument('-o', '--output', type='character', help="Output count data, if required")
 parser$add_argument('-o2', '--output2', type='character', help="Output size factor file")
-parser$add_argument('--lambda', type='character', help="Output file storing the lambda value used in entropy::freqs.shrink")
 parser$add_argument('--features', type='character')
-parser$add_argument('--method_zero', type='character', help="Zero handling method for clr and alr. Choices = [bgm, czm, one, min, pseudocount, pseudoproportion]")
-parser$add_argument('--method_transf', type='character', help="Transformation or normalization method. Choices = [log2, clr, alr, tmm, scran]")
+parser$add_argument('--method_zero', type='character', help="Zero handling method for clr and alr")
+parser$add_argument('--method_transf', type='character', help="Transformation or normalization method")
 parser$add_argument('--refgene', type='character', help="Reference gene index. This is required to compute alr.")
 parser = parser$parse_args()
 
 # check arguments
-if (!is.null(parser$method_zero) && !( parser$method_zero %in% c("bgm", "czm", "one", "min", "pseudocount", "pseudoproportion") )){
+if (!is.null(parser$method_zero) && !( parser$method_zero %in% c("bgm", "czm", "one", "min", "shrinkc", "freqshrink") )){
     stop("wrong zero replacement method - ", parser$method_zero)
 }
 if (!is.null(parser$method_transf) && !( parser$method_transf %in% c("log2", "clr", "alr", "tmm", "scran") )){
     stop("wrong transformation or normalization method - ", parser$method_transf)
-}
-if (parser$method_transf %in% c('clr','alr') && is.null(parser$lambda)){
-    stop("please provide output filename for lambda")
 }
 
 
@@ -48,12 +44,10 @@ class(count)
 
 # functions -------------------------------------------------------------------
 
-replace_zero <- function(count, method=c("bgm", "czm", "one", "min", "pseudocount", "pseudoproportion")){
+replace_zero <- function(count, method=c("bgm", "czm", "one", "min", "shrinkc", "freqshrink")){
 
     method = match.arg(method)
-    if (!any(count==0, na.rm=T)) return(count)
     message("replacing zeros with method ", method)
-    lambda = NA
 
     # replace zero
     if (method == "bgm"){
@@ -88,14 +82,12 @@ replace_zero <- function(count, method=c("bgm", "czm", "one", "min", "pseudocoun
         zeros = count == 0
         count[zeros] = min(count[!zeros])
 
-    }else if (method == "pseudocount"){
+    }else if (method == "shrinkc"){
         count  = t(apply(t(count), 2, shrinkc))
         
-    }else if (method == "pseudoproportion"){
+    }else if (method == "freqshrink"){
         require(entropy)
-        out    = as.matrix(freqs.shrink(count))
-        count  = as.data.frame(out)
-        lambda = attributes(out)$lambda.freqs
+        count  = t(apply(t(count), 2, freqs.shrink))
     }
     
 
@@ -104,7 +96,7 @@ replace_zero <- function(count, method=c("bgm", "czm", "one", "min", "pseudocoun
     # check zeros and negative values
     if(any(count<=0, na.rm=T)) stop("counts matrix contain zero and/or negative values")
 
-    return(list(count, lambda))
+    return(count)
 }
 
 calculate_geom_mean <-  function(count){
@@ -135,33 +127,25 @@ shrinkc <- function(n){
 
 # transform/normalize data --------------------------------------------------------------
 
-lambda = NA
 if (parser$method_transf == 'log2'){
     message("log2-transforming data")
-    method = parser$method_zero
     if (is.null(parser$method_zero)) parser$method_zero = "one"
-    out    = replace_zero(count, parser$method_zero)
-    count  = out[[1]]
-    lambda = out[[2]]
-    count  = log2(count)
+    count = replace_zero(count, parser$method_zero)
+    count = log2(count)
 
 }else if (parser$method_transf == 'alr'){
     message("alr-transforming data")
-    out    = replace_zero(count, parser$method_zero)
-    count  = out[[1]]
-    lambda = out[[2]]
+    count = replace_zero(count, parser$method_zero)
     size.factor = count[,nrefgene]
-    count  = count[,-nrefgene] / size.factor 
-    count  = log(count)
+    count = count / size.factor   # count[,-nrefgene] / size.factor 
+    count = log(count)
 
 }else if (parser$method_transf == 'clr'){
     message("clr-transforming data")
-    out    = replace_zero(count, parser$method_zero)
-    count  = out[[1]]
-    lambda = out[[2]]
+    count = replace_zero(count, parser$method_zero)
     size.factor = calculate_geom_mean(count)
-    count  = count / size.factor
-    count  = log(count)
+    count = count / size.factor
+    count = log(count)
 
 }else if (parser$method_transf == 'tmm'){
     message("normalizing data with method tmm")
@@ -176,10 +160,8 @@ if (parser$method_transf == 'log2'){
         adj.libsize = eff.libsize + 2 * adj.prior
         count       = (t(count) + adj.prior) / adj.libsize * 1e6  ## note that adj.prior has length libsize, therefore you should be careful when transposing and making matrix calculations
     }else{
-        out         = replace_zero(t(count), parser$method_zero)
-        count       = out[[1]]
-        lambda      = out[[2]]
-        count       = count / eff.libsize * 1e6
+        count = replace_zero(t(count), parser$method_zero)
+        count = count / eff.libsize * 1e6
     }
     count = log2(count)
 
@@ -195,8 +177,8 @@ if (parser$method_transf == 'log2'){
     size.factor = sce@colData@listData$sizeFactor
     count       = t(count) / size.factor
     if (is.null(parser$method_zero)) parser$method_zero = "one"
-    count       = replace_zero(count, parser$method_zero)
-    count       = log2(count)
+    count = replace_zero(count, parser$method_zero)
+    count = log2(count)
 
 }else{
     stop("make sure you introduced the correct processing methods")
@@ -215,6 +197,3 @@ if (parser$method_transf != 'log2') {
 } else {
     file.create(parser$output2)
 }
-
-# store lambda file
-cat(lambda, file=parser$lambda)

@@ -27,10 +27,6 @@ ch_count
     .combine( ch_features, by:[0,1] )
     .combine( ch_barcodes, by:[0,1] )
     .set{ ch_input }  // dataset, experimental, full, absolute, count, features, barcodes
-Channel
-    .fromPath(params.genes_fixed, checkIfExists:true)
-    .map { it -> [ it.getSimpleName().tokenize('_')[0], it ] } 
-    .set{ ch_genes_fixed }
 
 
 ///////////////////////////////////////////////////////////////
@@ -38,8 +34,7 @@ Channel
 ///////////////////////////////////////////////////////////////
 
 // modules
-// include { GET_REDUCED_DATASET } from "${launchDir}/modules/select-data.nf"
-include { SELECT_NOZERO_GENES; FILTER_GENES; SELECT_FIXED_GENES } from "${launchDir}/modules/select-data.nf"
+include { SELECT_NOZERO_GENES_LONG; SELECT_NOZERO_GENES_SQUARE; FILTER_GENES } from "${launchDir}/modules/select-data.nf"
 include { GET_RELATIVE } from "${launchDir}/modules/get-relative.nf"
 
 // subworkflows
@@ -65,47 +60,37 @@ workflow {
             params.simulation_slope,
             params.simulation_ndata,
             params.simulation_cell_factor,
-            params.simulation_depth_factor,
-            params.do_simulation
-        )  
+            params.simulation_depth_factor
+        )
         ch_input
-            .filter{ it[1] == 'experimental' }   // don't want to compute the benchmark on phaseS original data
             .mix( DATA_SIMULATION.out.ch_simulated )
-            .set{ ch_input }    
-    } 
-
-    /* module: filter out genes with high zero rate */
-    full = 'full'
-    if ( params.do_filter_genes ){
-        FILTER_GENES( ch_input )
-        ch_input = FILTER_GENES.out
-        full = 'filtered'
+            .set{ ch_input }
     }
+    ch_ori = ch_input
+
 
     /* module: get non-zero gene datasets */
-    // if ( params.do_nozero_genes ){
-    //     GET_REDUCED_DATASET( ch_input )
-    //     ch_input
-    //         .mix( GET_REDUCED_DATASET.out )
-    //         .set{ ch_input }
-    // }
     if ( params.do_nozero_genes ){
-        SELECT_NOZERO_GENES( ch_input )
+        SELECT_NOZERO_GENES_LONG( ch_input )
+        SELECT_NOZERO_GENES_SQUARE( ch_input )
         ch_input
-            .mix( SELECT_NOZERO_GENES.out )
+            .mix( SELECT_NOZERO_GENES_LONG.out )
+            .mix( SELECT_NOZERO_GENES_SQUARE.out )
             .set{ ch_input }
     }
 
-    /* module: get fixed genes */
-    if ( params.do_fix_genes ){
+    /* module: filter out genes with high zero rate */
+    /* so the correlation coefficients will be computed only based on the remaining genes */
+    if ( params.do_filter_genes ){
+        FILTER_GENES( ch_ori )
         ch_input
-            .combine(ch_genes_fixed, by:0)
-            .filter{ it[2] == full }
-            .set{ ch_to_fixed }
-        SELECT_FIXED_GENES( ch_to_fixed )
-        ch_input
-            .mix( SELECT_FIXED_GENES.out )
+            .mix( FILTER_GENES.out )
             .set{ ch_input }
+    }
+
+    /* if only test */
+    if ( params.do_test ){
+        ch_input = SELECT_NOZERO_GENES_LONG.out
     }
 
     /* module: get relative data */
@@ -114,6 +99,7 @@ workflow {
         .mix( GET_RELATIVE.out )
         .set{ ch_input }
 
+
     /* subworkflow: plot basic figures for experimental and simulated data */
     // TODO also compute data exploration plots for transformed data
     if ( params.do_plot_data_exploration ){
@@ -121,7 +107,6 @@ workflow {
     }
 
     /* subworkflow: data processing */
-    ch_ori = ch_input
     if ( params.do_data_processing ){
         DATA_PROCESSING(
             ch_input,
@@ -135,7 +120,7 @@ workflow {
     if ( params.do_correlation ){
         CORRELATION(
             DATA_PROCESSING.out,
-            ch_ori,
+            ch_input,
             params.method_correlation.tokenize(','),
             params.method_evaluation.tokenize(','),
             params.scatter_colorby
